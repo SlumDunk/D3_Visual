@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<style>
+    .axis path,
+    .axis line {
+        fill: none;
+        stroke: black;
+        shape-rendering: crispEdges;
+    }
+
+    .axis text {
+        font-family: sans-serif;
+        font-size: 6px;
+    }
+
+    .tooltip {
+        position: absolute;
+        width: 120px;
+        height: auto;
+        font-family: simsun;
+        font-size: 14px;
+        text-align: center;
+        border-style: solid;
+        border-width: 1px;
+        background-color: white;
+        border-radius: 5px;
+        text-align: left;
+    }
+
+    .svg-container {
+        display: inline-block;
+        position: relative;
+        width: 100%;
+        padding-bottom: 100%; /* aspect ratio */
+        vertical-align: top;
+        overflow: hidden;
+    }
+
+    .svg-content-responsive {
+        display: inline-block;
+        position: relative;
+        top: 10px;
+        left: 0;
+    }
+
+    .logo {
+        width:200px;
+        height: 200px;
+        position: relative;
+        /*background: url(./image/test.png) no-repeat;
+        background-size: contain;*/
+        margin: 0 auto;
+    }
+
+    .container {
+        position: absolute;
+        width: 100%;
+        width: 1600px;
+        height: 1200px;
+    }
+
+
+</style>
+
+<body>
+<div class="container">
+    <div id='left-div' style="float: left;width:15%;height:300px;padding-top:35px;text-align: center;">
+        <div class="logo">
+            <img src="./image/hp.jpg" style='max-height:100%;max-width:100%'>
+        </div>
+        <div>
+            <span>x axis:</span>
+            <select id="x-axis">
+                <option value="GRE">GRE</option>
+                <option value="TOEFL">TOEFL</option>
+                <option value="SOP" selected="selected">SOP</option>
+                <option value="LOR">LOR</option>
+                <option value="Chance">Chance</option>
+            </select>
+        </div>
+        <div>
+            <span>y axis:</span>
+            <select id="y-axis">
+                <option value="GRE">GRE</option>
+                <option value="TOEFL" selected="selected">TOEFL</option>
+                <option value="SOP">SOP</option>
+                <option value="LOR">LOR</option>
+                <option value="Chance">Chance</option>
+            </select>
+        </div>
+        <input type="submit" value="update" onclick="onSubmit()"/>
+    </div>
+    <div id="right-div" style="float:left;width:85%;height:100%;"></div>
+</div>
+</body>
+<script src="http://d3js.org/d3.v3.min.js"></script>
+<script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
+<script>
+    var itemSize = 15,
+        cellSize = itemSize - 1,        
+        margin = {top: 20, right: 50, bottom: 20, left: 50},
+        width = 1260-margin.left-margin.right, height = 1040-margin.top-margin.bottom;
+
+    //define the tooltip
+    var tooltip = d3.select("body")
+        .append("div")
+        .attr("class", "tooltip")
+        .style("opacity", 0.0);
+
+    //define the color array
+    // var colours = ["#6363FF", "#6373FF", "#63A3FF", "#63E3FF", "#63FFFB", "#63FFCB",
+    //     "#63FF9B", "#63FF6B", "#7BFF63", "#BBFF63", "#DBFF63", "#FBFF63",
+    //     "#ffd363", "#FFB363", "#FF8363", "#FF7363", "#ff6364"];
+    var colors = ['#FF0064', '#7BFF63'];
+    //define the color scale
+    var colorScale = d3.scale.linear()
+    .domain([0, 0.1, 0.2, 0.3, 0.35, 0.4, 0.45, 0.5, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1])
+        .domain([0, 1])
+        .range(colors);
+
+    //store the source data of csv
+    var sourceData;
+    // current data array for rendering chart
+    var data;
+    // svg object
+    var svg;
+    // x scale
+    var xScale;
+    //y scale
+    var yScale;
+    //y axis
+    var yAxis;
+    // x axis
+    var xAxis;
+    // x domain
+    var x_domain;
+    // y domain
+    var y_domain;
+    // vertical border
+    var y_border = 20;
+    // horizontal border
+    var x_boarder = 50;
+
+    var xTag = 'SOP';
+    var yTag = 'TOEFL';
+    d3.csv('./data/dataset.csv', function (items) {
+        sourceData = items;
+        data = items.map(function (item) {
+            let newItem = {};
+            newItem.y = item.TOEFL;
+            newItem.x = item.SOP;
+            newItem.value = item.Chance;
+            return newItem;
+        });
+        // get the x domain array
+        x_domain = d3.set(data.map(function (item) {
+            return item.x;
+        })).values();
+        // get the y domain array
+        y_domain = d3.set(data.map(function (item) {
+            return item.y;
+        })).values();
+        // sort x domain
+        x_domain.sort(function (a, b) {
+            return a - b;
+        });
+        // sort y domain
+        y_domain.sort(function (a, b) {
+            return a - b;
+        });
+
+        //define the scale of x axis
+        //xScale = d3.scale.ordinal().domain(x_domain).rangeBands([0, x_domain.length * itemSize > ($(window).width() - x_boarder) ? ($(window).width() - x_boarder) : x_domain.length * itemSize]);
+        xScale = d3.scale.ordinal().domain(x_domain).rangeBands([0, x_domain.length * itemSize]);
+        //define the x axis
+        xAxis = d3.svg.axis()
+            .scale(xScale)
+            .tickFormat(function (d) {
+                return d;
+            })
+            .orient("top");
+        //define the scale of y axis
+        // yScale = d3.scale.ordinal().domain(y_domain).rangeBands([0, y_domain.length * itemSize > ($(window).height() - y_border) ? ($(window).height() - y_border) : y_domain.length * itemSize]);
+        yScale = d3.scale.ordinal().domain(y_domain).rangeBands([0, y_domain.length * itemSize]);
+        //define the y axis
+        yAxis = d3.svg.axis()
+            .scale(yScale)
+            .tickFormat(function (d) {
+                return d;
+            })
+            .orient("left");
+
+        //render svg
+        // svg = d3.select('#svg')
+        //     .append("svg")
+        //     .classed("svg-container", true) //container class to make it responsive
+        //responsive SVG needs these 2 attributes and no width and height attr
+        // .attr("preserveAspectRatio", "xMinYMin meet")
+        // .attr("viewBox", "0 0 1000 800")
+        //class to make it responsive
+        // .classed("svg-content-responsive", true)
+        // .append("g")
+        // .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+        svg = d3.select('#right-div')
+            .append("svg")
+            .attr("width", width + margin.left + margin.right)
+            .attr("height", height + margin.top + margin.bottom)
+            .append("g")
+            .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+
+        // render cells in svg
+        svg.selectAll('rect')
+            .data(data)
+            .enter().append('g').append('rect')
+            .attr('class', 'cell')
+            .attr('width', cellSize)
+            .attr('height', cellSize)
+            .attr('y', function (d) {
+                return yScale(d.y) + y_border;
+            })
+            .attr('x', function (d) {
+                return xScale(d.x) + x_boarder;
+            })
+            .attr('fill', function (d) {
+                 return colorScale(d.value);
+                // if (d.value <= 0.5) {
+                //     return colors[0];
+                // } else {
+                //     return colors[1];
+                // }
+            })
+            .on('mouseover', function (d) {
+                tooltip.html(xTag + ':' +
+                    d.x + "<br />" + yTag + ':' + d.y)
+                    .style("left", (d3.event.pageX) + "px")
+                    .style("top", (d3.event.pageY + 20) + "px")
+                    .style("opacity", 1.0);
+            }).on('mousemove', function (d) {
+            tooltip.style("left", (d3.event.pageX) + "px")
+                .style("top", (d3.event.pageY + 20) + "px");
+        }).on('mouseout', function (d) {
+            tooltip.style("opacity", 0.0);
+        });
+
+        //render x axis
+        svg.append("g")
+            .attr("class", "x axis")
+            .attr("transform", "translate(" + x_boarder + "," + y_border + ")")
+            .call(xAxis)
+            .selectAll('text')
+            .attr('font-weight', 'normal');
+
+        // text label for the x axis
+        svg.append("text")
+            .attr("class", "xTag")
+            .attr("transform",
+                "translate(" + (x_domain.length * itemSize / 2 + x_boarder) + " ," + 0 + ")")
+            .style("text-anchor", "middle")
+            .text(xTag);
+
+        //render y axis
+        svg.append("g")
+            .attr("class", "y axis")
+            .attr("transform", "translate(" + x_boarder + "," + y_border + ")")
+            .call(yAxis)
+            .selectAll('text')
+            .attr('font-weight', 'normal');
+
+        // text label for the y axis
+        svg.append("text")
+            .attr("class", "yTag")
+            .attr("transform", "translate(0," + (y_domain.length * itemSize / 2 + y_border) + ")")
+            .style("text-anchor", "middle")
+            .text(yTag);
+    });
+
+    //define on submit function which will be called when update the attributes for heat map
+    function onSubmit() {
+        //get attribute for x axis
+        xTag = $('#x-axis').find('option:selected').val();
+        //get attribute for y axis
+        yTag = $('#y-axis').find('option:selected').val();
+        //find new data to render
+        data = sourceData.map(function (item) {
+            let newItem = {};
+            newItem.x = item[xTag];
+            newItem.y = item[yTag];
+            newItem.value = item['Chance'];
+            return newItem;
+        });
+
+        //find the domain of new x axis
+        x_domain = d3.set(data.map(function (item) {
+            return item.x;
+        })).values();
+
+        //find the domain of new y aixs
+        y_domain = d3.set(data.map(function (item) {
+            return item.y;
+        })).values();
+        //sort x domain array
+        x_domain.sort(function (a, b) {
+            return a - b;
+        });
+        // sort y domain array
+        y_domain.sort(function (a, b) {
+            return a - b;
+        });
+        //update the scale of x axis
+        // xScale.domain(x_domain).rangeBands([0, x_domain.length * itemSize > ($(window).width() - x_boarder) ? ($(window).width() - x_boarder) : x_domain.length * itemSize]);
+        xScale.domain(x_domain).rangeBands([0, x_domain.length * itemSize]);
+        //update x axis
+        xAxis.scale(xScale);
+        //update the scale of y axis
+        // yScale.domain(y_domain).rangeBands([0, y_domain.length * itemSize > ($(window).height() - y_border) ? ($(window).height() - y_border) : y_domain.length * itemSize]);
+        yScale.domain(y_domain).rangeBands([0, y_domain.length * itemSize]);
+        //update y axis
+        yAxis.scale(yScale);
+        //call update function
+        svg.select(".x").transition()
+            .duration(1000).attr("transform", "translate(" + x_boarder + "," + y_border + ")").call(xAxis);
+        //call update function
+        svg.select(".y").transition()
+            .duration(1000).attr("transform", "translate(" + x_boarder + "," + y_border + ")").call(yAxis);
+
+        // text label for the x axis
+        svg.select(".xTag")
+            .transition()
+            .duration(1000)
+            .attr("transform",
+                "translate(" + (x_domain.length * itemSize / 2 + x_boarder) + " ," + 0 + ")")
+            .style("text-anchor", "middle")
+            .text(xTag);
+
+        // text label for the y axis
+        svg.select(".yTag")
+            .transition()
+            .duration(1000)
+            .attr("transform", "translate(0," + (y_domain.length * itemSize / 2 + y_border) + ")")
+            .style("text-anchor", "middle")
+            .text(yTag);
+
+        // bind the new data dynamically and register function for events
+        svg.selectAll("rect")
+            .data(data)
+            .transition()
+            .duration(1000)
+            .ease("linear")
+            .each("start", function () {
+                d3.select(this).attr('fill', function (d) {
+                    return colorScale(d.value);
+                    // if (d.value <= 0.5) {
+                    //     return colors[0];
+                    // } else {
+                    //     return colors[1];
+                    // }
+                })
+
+            })
+            .attr("x", function (d) {
+                return xScale(d.x) + x_boarder;
+            })
+            .attr("y", function (d) {
+                return yScale(d.y) + y_border;
+            }).on('mouseover', function (d) {
+            tooltip.html(xTag + ':' +
+                d.x + "<br />" + yTag + ':' + d.y)
+                .style("left", (d3.event.pageX) + "px")
+                .style("top", (d3.event.pageY + 20) + "px")
+                .style("opacity", 1.0);
+        }).on('mousemove', function (d) {
+            tooltip.style("left", (d3.event.pageX) + "px")
+                .style("top", (d3.event.pageY + 20) + "px");
+        }).on('mouseout', function (d) {
+            tooltip.style("opacity", 0.0);
+        });
+
+
+    }
+</script>

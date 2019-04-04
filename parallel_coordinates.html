@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<title>Parallel Coordinates Ordinal Axis</title>
+<style>
+    svg {
+        font: 5px sans-serif;
+    }
+
+    .background path {
+        fill: none;
+        stroke: none;
+        stroke-width: 10px;
+        pointer-events: stroke;
+    }
+
+    .foreground path {
+        fill: none;
+        stroke: steelblue;
+        stroke-width: 1.5px;
+    }
+
+    .axis .title {
+        font-size: 8px;
+        font-weight: bold;
+        text-transform: uppercase;
+    }
+
+    .axis line,
+    .axis path {
+        fill: none;
+        stroke: #000;
+        shape-rendering: crispEdges;
+    }
+
+    .axis.string {
+        font-size: 6px;
+    }
+
+    .label {
+        -webkit-transition: fill 125ms linear;
+    }
+
+    .active .label:not(.inactive) {
+        font-weight: bold;
+        font-size: 9px;
+    }
+
+    .label.inactive {
+        fill: #ccc;
+    }
+
+    .foreground path.inactive {
+        stroke: #ccc;
+        stroke-opacity: .5;
+        stroke-width: 1px;
+    }
+
+    .tooltip {
+        position: absolute;
+        width: 120;
+        height: auto;
+        font-family: simsun;
+        font-size: 14px;
+        text-align: center;
+        border-style: solid;
+        border-width: 1px;
+        background-color: white;
+        border-radius: 5px;
+        text-align: left
+    }
+
+    .svg-container {
+        display: inline-block;
+        position: relative;
+        width: 100%;
+        padding-bottom: 100%; /* aspect ratio */
+        vertical-align: top;
+        overflow: hidden;
+    }
+
+    .svg-content-responsive {
+        display: inline-block;
+        position: absolute;
+        top: 10px;
+        left: 0;
+    }
+
+    .logo {
+        width: 200px;
+        height: 200px;
+        position: relative;
+        /* background: url(./image/pcp.jpg) no-repeat;
+         background-size: contain;*/
+        margin: 0 auto;
+    }
+
+    .container {
+        position: relative;
+        width: 1600px;
+        height: 1200px;
+    }
+</style>
+<body>
+<div class="container">
+    <div id='left-div' style="float: left;width:15%;padding-top:35px;text-align: center;">
+        <div class="logo">
+            <img src="./image/pcp.jpg" style='max-height:100%;max-width:100%'>
+        </div>
+    </div>
+    <div id="right-div" style="float:left;width:85%;height:100%;"></div>
+</div>
+</body>
+<script src="http://d3js.org/d3.v2.min.js"></script>
+<script>
+    //define the tooltip to show the detail information
+    var tooltip = d3.select("body")
+        .append("div")
+        .attr("class", "tooltip")
+        .style("opacity", 0.0);
+
+    //define the margin information
+    var margin = {top: 25, right: 50, bottom: 25, left: 50},
+        width = 1000 - margin.left - margin.right,
+        height = 600 - margin.top - margin.bottom;
+
+    //define the dimension array
+    var dimensions = [
+        {
+            name: "GRE",
+            scale: d3.scale.linear().range([0, height]),
+            type: "number"
+        },
+        {
+            name: "TOEFL",
+            scale: d3.scale.linear().range([height, 0]),
+            type: "number"
+        },
+        {
+            name: "UnivRate",
+            scale: d3.scale.linear().range([height, 0]),
+            type: "number"
+        },
+        {
+            name: "SOP",
+            scale: d3.scale.linear().range([height, 0]),
+            type: "number"
+        },
+        {
+            name: "LOR",
+            scale: d3.scale.linear().range([height, 0]),
+            type: "number"
+        },
+        {
+            name: "CGPA",
+            scale: d3.scale.linear().range([height, 0]),
+            type: "number"
+        },
+        {
+            name: "Chance",
+            scale: d3.scale.linear().range([height, 0]),
+            type: "number"
+        },
+    ];
+
+    //divide the width into several parts for whole dimensions
+    var x = d3.scale.ordinal()
+        .domain(dimensions.map(function (d) {
+            return d.name;
+        }))
+        .rangePoints([0, width]);
+
+    //define the line
+    var line = d3.svg.line()
+        .defined(function (d) {
+            return !isNaN(d[1]);
+        });
+    //define the y axis
+    var yAxis = d3.svg.axis()
+        .orient("left");
+
+    //define the svg
+    // var svg = d3.select("#svg").append("svg")
+    //     .classed("svg-container", true) //container class to make it responsive
+    //     //responsive SVG needs these 2 attributes and no width and height attr
+    //     .attr("preserveAspectRatio", "xMinYMin meet")
+    //     .attr("viewBox", "0 0 1000 600")
+    //     //class to make it responsive
+    //     .classed("svg-content-responsive", true)
+    //     .append("g")
+    //     .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+    var svg = d3.select("#right-div").append("svg")
+        .attr("width", width + margin.left + margin.right)
+        .attr("height", height + margin.top + margin.bottom)
+        .append("g")
+        .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+    //define parallel coordinates
+    var dimension = svg.selectAll(".dimension")
+        .data(dimensions)
+        .enter().append("g")
+        .attr("class", "dimension")
+        .attr("transform", function (d) {
+            return "translate(" + x(d.name) + ")";
+        });
+
+    d3.csv("./data/dataset.csv", function (data) {
+        dimensions.forEach(function (dimension) {
+            dimension.scale.domain(dimension.type === "number"
+                ? d3.extent(data, function (d) {
+                    return +d[dimension.name];
+                })
+                : data.map(function (d) {
+                    return d[dimension.name];
+                }).sort());
+        });
+
+        //add the background component
+        svg.append("g")
+            .attr("class", "background")
+            .selectAll("path")
+            .data(data)
+            .enter().append("path")
+            .attr("d", draw);
+
+        //add the foreground component
+        svg.append("g")
+            .attr("class", "foreground")
+            .selectAll("path")
+            .data(data)
+            .enter().append("path")
+            .attr("d", draw);
+
+        //add y axis
+        dimension.append("g")
+            .attr("class", "axis")
+            .each(function (d) {
+                d3.select(this).call(yAxis.scale(d.scale));
+            })
+            .append("text")
+            .attr("class", "title")
+            .attr("text-anchor", "middle")
+            .attr("y", -9)
+            .text(function (d) {
+                return d.name;
+            });
+
+        //register functions for events on axis text
+        var ordinal_labels = svg.selectAll(".axis text")
+            .on("mouseover", mouseover)
+            .on("mouseout", mouseout);
+
+        //register functions for events on paths
+        var projection = svg.selectAll(".background path,.foreground path")
+            .on("mouseover", mouseover)
+            .on("mouseout", mouseout);
+
+        //define the mouseover function
+        function mouseover(d) {
+            svg.classed("active", true);
+            // this could be more elegant
+            if (typeof d === "string") {
+                projection.classed("inactive", function (p) {
+                    return p.name !== d;
+                });
+                projection.filter(function (p) {
+                    return p.name === d;
+                }).each(moveToFront);
+                ordinal_labels.classed("inactive", function (p) {
+                    return p !== d;
+                });
+                ordinal_labels.filter(function (p) {
+                    return p === d;
+                }).each(moveToFront);
+            } else {
+                projection.classed("inactive", function (p) {
+                    return p !== d;
+                });
+                projection.filter(function (p) {
+                    return p === d;
+                }).each(moveToFront);
+                ordinal_labels.classed("inactive", function (p) {
+                    return p !== d.name;
+                });
+                ordinal_labels.filter(function (p) {
+                    return p === d.name;
+                }).each(moveToFront);
+                if (d.GRE != null) {
+                    tooltip.html('GRE:' + d.GRE + "<br />" + 'TOFEL:' + d.TOEFL + "<br />" + 'UnivRate:' + d.UnivRate + "<br />" + 'SOP:' + d.SOP + "<br />" + 'LOR:' + d.LOR + "<br />" + 'CGPA:' + d.CGPA + "<br />" + 'Chance:' + d.Chance)
+                        .style("left", (d3.event.pageX) + "px")
+                        .style("top", (d3.event.pageY + 20) + "px")
+                        .style("opacity", 1.0);
+                }
+            }
+        }
+
+        //define mouseout function
+        function mouseout(d) {
+            svg.classed("active", false);
+            projection.classed("inactive", false);
+            ordinal_labels.classed("inactive", false);
+            tooltip.style("opacity", 0.0);
+        }
+
+        //hightlight the selected line
+        function moveToFront() {
+            this.parentNode.appendChild(this);
+        }
+    });
+
+    //draw the lines
+    function draw(d) {
+        return line(dimensions.map(function (dimension) {
+            return [x(dimension.name), dimension.scale(d[dimension.name])];
+        }));
+    }
+
+</script>

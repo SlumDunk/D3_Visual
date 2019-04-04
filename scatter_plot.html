@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<style>
+
+    svg {
+        font: 10px sans-serif;
+        padding: 10px;
+    }
+
+    .axis,
+    .frame {
+        shape-rendering: crispEdges;
+    }
+
+    .axis line {
+        stroke: #ddd;
+    }
+
+    .axis path {
+        display: none;
+    }
+
+    .cell text {
+        font-weight: bold;
+        text-transform: capitalize;
+    }
+
+    .frame {
+        fill: none;
+        stroke: #aaa;
+    }
+
+    circle {
+        fill-opacity: .7;
+    }
+
+    circle.hidden {
+        fill: #ccc !important;
+    }
+
+    .extent {
+        fill: #000;
+        fill-opacity: .125;
+        stroke: #fff;
+    }
+
+    div.tooltip {
+        position: absolute;
+        text-align: center;
+        width: auto;
+        height: auto;
+        padding: 2px;
+        font: 12px sans-serif;
+        background: lightsteelblue;
+        border: 0px;
+        border-radius: 8px;
+        pointer-events: none;
+    }
+
+    .svg-container {
+        display: inline-block;
+        position: relative;
+        width: 100%;
+        padding-bottom: 100%; /* aspect ratio */
+        vertical-align: top;
+        overflow: hidden;
+    }
+
+    .svg-content-responsive {
+        display: inline-block;
+        position: absolute;
+        top: 10px;
+        left: 0;
+    }
+
+    .logo {
+        width: 200px;
+        height: 200px;
+        position: relative;
+        background: url(./image/sc.jpg) no-repeat;
+        background-size: contain;        
+        margin: 0 auto;        
+    }
+
+    .container {
+        position: relative;
+        width: 1600px;
+        height: 1200px;
+    }
+</style>
+<body>
+<div class="container">
+    <div id="left-div" style="float: left;width:15%;padding-top:35px;text-align: center;">
+        <div class="logo">
+             <img src="./image/sc.jpg" style='max-height:100%;max-width:100%'>
+        </div>
+    </div>
+    <div id="right-div" style="float:left;width:85%;height:100%;"></div>
+</div>
+</body>
+<script src="http://d3js.org/d3.v3.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.8.3/underscore-min.js"></script>
+<script>
+
+    d3.helper = {};
+    //define the tooltip component
+    d3.helper.tooltip = function () {
+        var tooltipDiv;
+        var bodyNode = d3.select('body').node();
+
+        function tooltip(selection) {
+            selection.on('mouseover.tooltip', function (point) {
+                // Clean up lost tooltips
+                d3.select('body').selectAll('div.tooltip').remove();
+                // Append tooltip
+                tooltipDiv = d3.select('body')
+                    .append('div')
+                    .attr('class', 'tooltip');
+                var absoluteMousePos = d3.mouse(bodyNode);
+                tooltipDiv
+                    .style('left', (absoluteMousePos[0] + 10) + 'px')
+                    .style('top', (absoluteMousePos[1] - 30) + 'px');
+
+                var line = '';
+                _.each(d3.keys(point), function (key, index) {
+                    if (index != d3.keys(point).length - 1) {
+                        line += key + ': ' + point[key] + '</br>';
+                    } else {
+                        line += key + ': ' + point[key];
+                    }
+                });
+                tooltipDiv.html(line);
+            })
+                .on('mousemove.tooltip', function () {
+                    // Move tooltip
+                    var absoluteMousePos = d3.mouse(bodyNode);
+                    tooltipDiv
+                        .style("left", (absoluteMousePos[0] + 10) + 'px')
+                        .style("top", absoluteMousePos[1] < 80 ? absoluteMousePos[1] + 10 : (absoluteMousePos[1] - 70) + 'px');
+                })
+                .on('mouseout.tooltip', function () {
+                    // Remove tooltip
+                    tooltipDiv.remove();
+                });
+
+        }
+
+        tooltip.attr = function (_x) {
+            if (!arguments.length) return attrs;
+            attrs = _x;
+            return this;
+        };
+
+        tooltip.style = function (_x) {
+            if (!arguments.length) return styles;
+            styles = _x;
+            return this;
+        };
+
+        return tooltip;
+    };
+
+    var size = 130,
+        padding = 20;
+
+    //define the scale of x axis
+    var xScale = d3.scale.linear()
+        .range([padding / 2, size - padding / 2]);
+
+    //define the scale of y axis
+    var yScale = d3.scale.linear()
+        .range([size - padding / 2, padding / 2]);
+    //define x axis
+    var xAxis = d3.svg.axis()
+        .scale(xScale)
+        .orient("bottom")
+        .ticks(6);
+    //define y axis
+    var yAxis = d3.svg.axis()
+        .scale(yScale)
+        .orient("left")
+        .ticks(6);
+    //define color scale
+    var color = d3.scale.category10();
+
+    d3.csv("./data/dataset.csv", function (data) {
+        return {
+            Srno: data["Srno"],
+            GRE: +data["GRE"],
+            TOEFL: +data["TOEFL"],
+            SOP: +data["SOP"],
+            CGPA: +data["CGPA"],
+        };
+    }, function (error, data) {
+
+        if (error) throw error;
+        //filter unnecessary attribute
+        let domainByTrait = {},
+            traits = d3.keys(data[0]).filter(function (d) {
+                return d !== "Srno";
+            }),
+            n = traits.length;
+
+        traits.forEach(function (trait) {
+            domainByTrait[trait] = d3.extent(data, function (d) {
+                return d[trait];
+            });
+        });
+
+        //divide the 2D space into n*n matrix
+        xAxis.tickSize(size * n);
+        yAxis.tickSize(-size * n);
+
+        //define the brush to render the chart
+        let brush = d3.svg.brush()
+            .x(xScale)
+            .y(yScale)
+            .on("brushstart", brushstart)
+            .on("brush", brushmove)
+            .on("brushend", brushend);
+
+        // let svg = d3.select(".container").append("svg")
+        //     .classed("svg-container", true) //container class to make it responsive
+        //     //responsive SVG needs these 2 attributes and no width and height attr
+        //     .attr("preserveAspectRatio", "xMinYMin meet")
+        //     .attr("viewBox", "0 0 1000 800")
+        //     //class to make it responsive
+        //     .classed("svg-content-responsive", true)
+        //     .append("g")
+        //     .attr("transform", "translate(" + padding + "," + padding / 2 + ")");
+        let svg = d3.select("#right-div").append("svg")
+            .attr("width", size * n + padding)
+            .attr("height", size * n + padding)
+            .append("g")
+            .attr("transform", "translate(" + padding + "," + padding / 2 + ")");
+
+
+        //render the x axis
+        svg.selectAll(".x.axis")
+            .data(traits)
+            .enter().append("g")
+            .attr("class", "x axis")
+            .attr("transform", function (d, i) {
+                return "translate(" + (n - i - 1) * size + ",0)";
+            })
+            .each(function (d) {
+                xScale.domain(domainByTrait[d]);
+                d3.select(this).call(xAxis);
+            });
+        //render the y axis
+        svg.selectAll(".y.axis")
+            .data(traits)
+            .enter().append("g")
+            .attr("class", "y axis")
+            .attr("transform", function (d, i) {
+                return "translate(0," + i * size + ")";
+            })
+            .each(function (d) {
+                yScale.domain(domainByTrait[d]);
+                d3.select(this).call(yAxis);
+            });
+
+        //render each block of matrix
+        let block = svg.selectAll(".cell")
+            .data(cross(traits, traits))
+            .enter().append("g")
+            .attr("class", "cell")
+            .attr("transform", function (d) {
+                return "translate(" + (n - d.i - 1) * size + "," + d.j * size + ")";
+            });
+
+        // add titles on the diagonal for each block
+        block.filter(function (d) {
+            return d.i === d.j;
+        }).append("text")
+            .attr("x", padding)
+            .attr("y", padding)
+            .attr("dy", ".71em")
+            .text(function (d) {
+                return d.x;
+            });
+
+        //each block call brush to register functions on events
+        block.call(brush);
+        //call the plot function to render cells in each block
+        block.each(plot);
+
+        //plot function
+        function plot(p) {
+            let cell = d3.select(this);
+
+            xScale.domain(domainByTrait[p.x]);
+            yScale.domain(domainByTrait[p.y]);
+
+            cell.append("rect")
+                .attr("class", "frame")
+                .attr("x", padding / 2)
+                .attr("y", padding / 2)
+                .style("pointer-events", "none")
+                .attr("width", size - padding)
+                .attr("height", size - padding);
+
+            let circles = cell.selectAll("circle")
+                .data(data)
+                .enter().append("circle")
+                .attr("cx", function (d) {
+                    return xScale(d[p.x]);
+                })
+                .attr("cy", function (d) {
+                    return yScale(d[p.y]);
+                })
+                .attr("r", 3)
+                .call(d3.helper.tooltip())//register the tooltip function
+                .style("fill", function (d) {
+                    return color(d.name);
+                });
+
+            circles.on('mousedown', function () {
+            });
+        }
+
+        //store the active cell
+        var brushCell;
+
+        // clear the previously-active brush, if any.
+        function brushstart(p) {
+            if (brushCell !== this) {
+                d3.select(brushCell).call(brush.clear());
+                xScale.domain(domainByTrait[p.x]);
+                yScale.domain(domainByTrait[p.y]);
+                brushCell = this;
+            }
+        }
+
+        // highlight the selected cells.
+        function brushmove(p) {
+            let e = brush.extent();
+            svg.selectAll("circle").classed("hidden", function (d) {
+                return e[0][0] > d[p.x] || d[p.x] > e[1][0]
+                    || e[0][1] > d[p.y] || d[p.y] > e[1][1];
+            });
+        }
+
+        // if the brush is empty, select all circles.
+        function brushend() {
+            if (brush.empty()) svg.selectAll(".hidden").classed("hidden", false);
+        }
+
+    });
+
+    //return the matrix
+    function cross(a, b) {
+        let c = [], n = a.length, m = b.length, i, j;
+        for (i = -1; ++i < n;) {
+            for (j = -1; ++j < m;) {
+                c.push({x: a[i], i: i, y: b[j], j: j});
+            }
+        }
+        return c;
+    }
+
+</script>

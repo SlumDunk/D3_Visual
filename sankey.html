@@ -14,18 +14,22 @@
             max-width: 1200px;
             margin: auto;
         }
+
         #chart {
             height: 500px;
             font: 13px sans-serif;
         }
+
         .node rect {
             fill-opacity: .9;
             shape-rendering: crispEdges;
             stroke-width: 0;
         }
+
         .node text {
             text-shadow: 0 1px 0 #fff;
         }
+
         .link {
             fill: none;
             stroke: #000;
@@ -38,21 +42,25 @@
 
 <script>
     var colors = {
-        'environment':         '#edbd00',
-        'social':              '#367d85',
-        'animals':             '#97ba4c',
-        'health':              '#f5662b',
+        'environment': '#edbd00',
+        'social': '#367d85',
+        'animals': '#97ba4c',
+        'health': '#f5662b',
         'research_ingredient': '#3f3e47',
-        'fallback':            '#9f9fa3'
+        'fallback': '#9f9fa3',
+        'TP': '#97ba4c',
+        'TN': '#f5662b',
+        'FP': '#3f3e47',
+        'FN': '#367d85'
     };
-    d3.json("http://cdn.rawgit.com/q-m/d3.chart.sankey/master/example/data/product.json", function(error, json) {
-        var chart = d3.select("#chart").append("svg").chart("Sankey.Path");
+    d3.json("./data/wiki.json", function (error, json) {
+        let chart = d3.select("#chart").append("svg").chart("Sankey.Path");
         chart
             .name(label)
-            .colorNodes(function(name, node) {
+            .colorNodes(function (name, node) {
                 return color(node, 1) || colors.fallback;
             })
-            .colorLinks(function(link) {
+            .colorLinks(function (link) {
                 return color(link.source, 4) || color(link.target, 1) || colors.fallback;
             })
             .nodeWidth(15)
@@ -60,19 +68,127 @@
             .spread(true)
             .iterations(0)
             .draw(json);
+
         function label(node) {
             return node.name.replace(/\s*\(.*?\)$/, '');
         }
+
         function color(node, depth) {
-            var id = node.id.replace(/(_score)?(_\d+)?$/, '');
+            let id = node.id.replace(/(_score)?(_\d+)?$/, '');
             if (colors[id]) {
                 return colors[id];
             } else if (depth > 0 && node.targetLinks && node.targetLinks.length == 1) {
-                return color(node.targetLinks[0].source, depth-1);
+                return color(node.targetLinks[0].source, depth - 1);
             } else {
                 return null;
             }
         }
+
+
+        let nodes = d3.selectAll('.node');
+        let links = d3.selectAll('path');
+        // console.log(links[0][0].__data__);
+        // console.log(nodes);
+        let link_map = d3.map();
+        let target_link_map = d3.map();
+        let source_link_map = d3.map();
+        let linkArray = links[0];
+        linkArray.forEach(function (element) {
+            let data = element.__data__;
+            let sourceId = data.source.id;
+            let targetId = data.target.id;
+            let key = sourceId.concat('#', targetId);
+            link_map.set(key, element);
+            let targetLinkArray;
+            if (target_link_map.get(targetId) == null) {
+                targetLinkArray = new Array();
+                targetLinkArray.push(element);
+            } else {
+                targetLinkArray = target_link_map.get(targetId);
+                targetLinkArray.push(element);
+            }
+            target_link_map.set(targetId, targetLinkArray);
+            let sourceLinkArray;
+            if (source_link_map.get(sourceId) == null) {
+                sourceLinkArray = new Array();
+                sourceLinkArray.push(element);
+            } else {
+                sourceLinkArray = source_link_map.get(sourceId);
+                sourceLinkArray.push(element);
+            }
+            source_link_map.set(sourceId, sourceLinkArray);
+        });
+        // nodes.on("click", onclick);
+        // nodes.on("mouseover",onclick);
+
+        links.on("mouseover", function (data) {
+            let sourceId = data.source.id;
+            let targetId = data.target.id;
+            let targetSet = d3.set();
+            let sourceSet = d3.set();
+            let sourceIds = d3.set();
+            let targetIds = d3.set();
+            sourceIds.add(sourceId);
+            targetIds.add(targetId);
+            sourceSet.add(sourceId);
+            targetSet.add(targetId);
+            while (!sourceSet.empty()) {
+                let tempSet = d3.set();
+                sourceSet.forEach(function (value) {
+                    if (target_link_map.get(value) != null) {
+                        let linkArray = target_link_map.get(value);
+                        console.log(linkArray.length);
+                        linkArray.forEach(function (item) {
+                            tempSet.add(item.__data__.source.id);
+                            sourceIds.add(item.__data__.source.id);
+                        });
+                    }
+                });
+                sourceSet = tempSet;
+                tempSet = null;
+
+            }
+
+            while (!targetSet.empty()) {
+                let tempSet = d3.set();
+                targetSet.forEach(function (value) {
+                    if (source_link_map.get(value) != null) {
+                        let linkArray = source_link_map.get(value);
+                        linkArray.forEach(function (item) {
+                            tempSet.add(item.__data__.target.id);
+                            targetIds.add(item.__data__.target.id);
+                        });
+                    }
+                });
+                targetSet = tempSet;
+                tempSet = null;
+            }
+            console.log(targetIds);
+            console.log(sourceIds);
+            let key = sourceId.concat('#', targetId);
+            let filterLinks = links.filter(function (path) {
+                let anotherSourceId = path.source.id;
+                let anotherTargetId = path.target.id;
+                let anotherKey = anotherSourceId.concat('#', anotherTargetId);
+                // return anotherKey != key;
+                // return anotherSourceId != targetId && anotherTargetId != sourceId && anotherKey != key;
+                return !targetIds.has(anotherSourceId) && !sourceIds.has(anotherTargetId) && anotherKey != key;
+            });
+            filterLinks.style('opacity', 0.2);
+            // console.log(data.value);
+            //recycle the memory
+            targetSet = null;
+            sourceSet = null;
+            sourceIds = null;
+            targetIds = null;
+        });
+
+        links.on("mouseout", function (data) {
+            links.style('opacity', 1);
+        });
+        // function onclick(d) {
+        //     console.log(d);
+        // }
     });
 </script>
 </body>

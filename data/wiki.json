@@ -1,0 +1,161 @@
+{
+  "nodes": [
+    {
+      "name": "TP_5",
+      "id": "TP_5"
+    },
+    {
+      "name": "TP_10",
+      "id": "TP_10"
+    },
+    {
+      "name": "TP_15",
+      "id": "TP_15"
+    },
+    {
+      "id": "TP_20",
+      "name": "TP_20"
+    },
+    {
+      "name": "TP_25",
+      "id": "TP_25"
+    },
+    {
+      "name": "TN_5",
+      "id": "TN_5"
+    },
+    {
+      "name": "TN_10",
+      "id": "TN_10"
+    },
+    {
+      "name": "TN_15",
+      "id": "TN_15"
+    },
+    {
+      "id": "TN_20",
+      "name": "TN_20"
+    },
+    {
+      "name": "TN_25",
+      "id": "TN_25"
+    },
+    {
+      "name": "FP_5",
+      "id": "FP_5"
+    },
+    {
+      "name": "FP_10",
+      "id": "FP_10"
+    },
+    {
+      "name": "FP_15",
+      "id": "FP_15"
+    },
+    {
+      "id": "FP_20",
+      "name": "FP_20"
+    },
+    {
+      "name": "FP_25",
+      "id": "FP_25"
+    },
+    {
+      "name": "FN_5",
+      "id": "FN_5"
+    },
+    {
+      "name": "FN_10",
+      "id": "FN_10"
+    },
+    {
+      "name": "FN_15",
+      "id": "FN_15"
+    },
+    {
+      "id": "FN_20",
+      "name": "FN_20"
+    },
+    {
+      "name": "FN_25",
+      "id": "FN_25"
+    }
+  ],
+  "links": [
+    {
+      "source": 0,
+      "target": 5,
+      "value": 0.5
+    },
+    {
+      "source": 5,
+      "target": 10,
+      "value": 0.2
+    },
+    {
+      "source": 10,
+      "target": 15,
+      "value": 0.2
+    },
+    {
+      "source": 1,
+      "target": 6,
+      "value": 0.5
+    },
+    {
+      "source": 6,
+      "target": 11,
+      "value": 0.2
+    },
+    {
+      "source": 11,
+      "target": 16,
+      "value": 0.2
+    },
+    {
+      "source": 2,
+      "target": 7,
+      "value": 0.5
+    },
+    {
+      "source": 7,
+      "target": 12,
+      "value": 0.2
+    },
+    {
+      "source": 12,
+      "target": 17,
+      "value": 0.2
+    },
+    {
+      "source": 3,
+      "target": 8,
+      "value": 0.5
+    },
+    {
+      "source": 8,
+      "target": 13,
+      "value": 0.2
+    },
+    {
+      "source": 13,
+      "target": 18,
+      "value": 0.2
+    },
+    {
+      "source": 4,
+      "target": 9,
+      "value": 0.5
+    },
+    {
+      "source": 9,
+      "target": 14,
+      "value": 0.2
+    },
+    {
+      "source": 14,
+      "target": 19,
+      "value": 0.2
+    }
+  ]
+}

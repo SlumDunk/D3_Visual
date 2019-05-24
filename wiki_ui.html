@@ -91,8 +91,7 @@
         height: 1200px;
     }
 
-    #chart {
-        height: 500px;
+    #right-div {
         font: 13px sans-serif;
     }
 
@@ -114,11 +113,12 @@
 </style>
 <body>
 <div class="container">
-    <div id="left-div" style="float:left;width:50%;height:100%;"></div>
-    <div id='right-div' style="float: left;width:50%;height:500px;">
+    <div id="left-div" style="width:100%;height:50%;"></div>
+    <div id='right-div' style="width:100%;height:50%;">
     </div>
 </div>
 </body>
+<script src="https://unpkg.com/axios/dist/axios.min.js"></script>
 <script src="http://d3js.org/d3.v3.min.js"></script>
 <script src="./js/sankey.js"></script>
 <script src="./js/d3.chart.min.js"></script>
@@ -132,24 +132,39 @@
 
     //define the margin information
     let margin = {top: 25, right: 50, bottom: 25, left: 50},
-        width = 600 - margin.left - margin.right,
+        width = 1200 - margin.left - margin.right,
         height = 600 - margin.top - margin.bottom;
+
+    let colors = {
+        'TP': '#97ba4c',
+        'TN': '#f5662b',
+        'FP': '#3f3e47',
+        'FN': '#367d85'
+    };
+    let link;
+    let nodes;
+    let links;
+    let link_map;
+    let target_link_map;
+    let source_link_map;
+    let linkArray;
+    let parameter_path_map;
 
     //define the dimension array
     let dimensions = [
         {
-            name: "GRE",
+            name: "time",
             scale: d3.scale.linear().range([0, height]),
             type: "number"
         },
         {
-            name: "TOEFL",
-            scale: d3.scale.linear().range([height, 0]),
+            name: "good_edit",
+            scale: d3.scale.linear().range([0, height]),
             type: "number"
         },
         {
-            name: "UnivRate",
-            scale: d3.scale.linear().range([height, 0]),
+            name: "bad_edit",
+            scale: d3.scale.linear().range([0, height]),
             type: "number"
         },
     ];
@@ -184,8 +199,11 @@
         .attr("transform", function (d) {
             return "translate(" + x(d.name) + ")";
         });
+    let projection;
+    let ordinal_labels;
 
-    d3.csv("./data/dataset.csv", function (data) {
+    // d3.csv("./data/dataset.csv", function (data) {
+    d3.json("http://127.0.0.1:8000/wiki/params/", function (data) {
         dimensions.forEach(function (dimension) {
             dimension.scale.domain(dimension.type === "number"
                 ? d3.extent(data, function (d) {
@@ -227,12 +245,12 @@
             });
 
         //register functions for events on axis text
-        let ordinal_labels = svg.selectAll(".axis text")
+        ordinal_labels = svg.selectAll(".axis text")
             .on("mouseover", mouseover)
             .on("mouseout", mouseout);
 
         //register functions for events on paths
-        let projection = svg.selectAll(".background path,.foreground path")
+        projection = svg.selectAll(".background path,.foreground path")
             .on("mouseover", mouseover)
             .on("mouseout", mouseout);
 
@@ -266,11 +284,40 @@
                 ordinal_labels.filter(function (p) {
                     return p === d.name;
                 }).each(moveToFront);
-                if (d.GRE != null) {
-                    tooltip.html('GRE:' + d.GRE + "<br />" + 'TOFEL:' + d.TOEFL + "<br />" + 'UnivRate:' + d.UnivRate + "<br />" + 'SOP:' + d.SOP + "<br />" + 'LOR:' + d.LOR + "<br />" + 'CGPA:' + d.CGPA + "<br />" + 'Chance:' + d.Chance)
+                if (d.time != null) {
+                    tooltip.html('time:' + d.time + "<br />" + 'good_edit:' + d.good_edit + "<br />"
+                        + 'bad_edit:' + d.bad_edit)
                         .style("left", (d3.event.pageX) + "px")
                         .style("top", (d3.event.pageY + 20) + "px")
                         .style("opacity", 1.0);
+                    //request data
+                    axios.get('http://127.0.0.1:8000/wiki/model/result', {
+                        params: {
+                            time: d.time,
+                            good_edit: d.good_edit,
+                            bad_edit: d.bad_edit
+                        }
+                    }).then(function (response) {
+                        console.log(response.data);
+                        let link_list = response.data;
+                        if (link_list.length == 0) {
+                            return;
+                        }
+                        let sourceIds = d3.set();
+                        let targetIds = d3.set();
+                        link_list.forEach(function (element) {
+                            sourceIds.add(element.source);
+                            targetIds.add(element.target);
+                        })
+                        let filterLinks = links.filter(function (path) {
+                            let anotherSourceId = path.source.id;
+                            let anotherTargetId = path.target.id;
+                            return !targetIds.has(anotherSourceId) && !sourceIds.has(anotherTargetId);
+                        });
+                        filterLinks.style('opacity', 0.2);
+                    }).catch(function (error) {
+                        console.log(error);
+                    });
                 }
             }
         }
@@ -296,17 +343,13 @@
         }));
     }
 
-    //sankey chart
-    let colors = {
-        'environment': '#edbd00',
-        'social': '#367d85',
-        'animals': '#97ba4c',
-        'health': '#f5662b',
-        'research_ingredient': '#3f3e47',
-        'fallback': '#9f9fa3'
-    };
-    d3.json("http://cdn.rawgit.com/q-m/d3.chart.sankey/master/example/data/product.json", function (error, json) {
+
+    d3.json("./data/wiki_test.json", function (error, json) {
         let chart = d3.select("#right-div").append("svg").chart("Sankey.Path");
+        let svg = d3.select("#right-div")[0][0].lastChild;
+        let g = svg.firstChild;
+        g.setAttribute("transform", "translate(" + 10 + "," + 10 + ")");
+
         chart
             .name(label)
             .colorNodes(function (name, node) {
@@ -326,7 +369,7 @@
         }
 
         function color(node, depth) {
-            var id = node.id.replace(/(_score)?(_\d+)?$/, '');
+            let id = node.id.replace(/(_score)?(_\d+)?$/, '');
             if (colors[id]) {
                 return colors[id];
             } else if (depth > 0 && node.targetLinks && node.targetLinks.length == 1) {
@@ -335,6 +378,160 @@
                 return null;
             }
         }
+
+
+        nodes = d3.selectAll('.node');
+        links = d3.selectAll('path');
+        // console.log(links[0][0].__data__);
+        // console.log(nodes);
+        link_map = d3.map();
+        target_link_map = d3.map();
+        source_link_map = d3.map();
+        linkArray = links[0];
+        linkArray.forEach(function (element) {
+            let data = element.__data__;
+            let sourceId = data.source.id;
+            let targetId = data.target.id;
+            let key = sourceId.concat('#', targetId);
+            link_map.set(key, element);
+            let targetLinkArray;
+            if (target_link_map.get(targetId) == null) {
+                targetLinkArray = new Array();
+                targetLinkArray.push(element);
+            } else {
+                targetLinkArray = target_link_map.get(targetId);
+                targetLinkArray.push(element);
+            }
+            target_link_map.set(targetId, targetLinkArray);
+            let sourceLinkArray;
+            if (source_link_map.get(sourceId) == null) {
+                sourceLinkArray = new Array();
+                sourceLinkArray.push(element);
+            } else {
+                sourceLinkArray = source_link_map.get(sourceId);
+                sourceLinkArray.push(element);
+            }
+            source_link_map.set(sourceId, sourceLinkArray);
+        });
+        // nodes.on("click", onclick);
+        // nodes.on("mouseover",onclick);
+
+        links.on("mouseover", function (data) {
+            let sourceId = data.source.id;
+            let targetId = data.target.id;
+            let targetSet = d3.set();
+            let sourceSet = d3.set();
+            let sourceIds = d3.set();
+            let targetIds = d3.set();
+            sourceIds.add(sourceId);
+            targetIds.add(targetId);
+            sourceSet.add(sourceId);
+            targetSet.add(targetId);
+            while (!sourceSet.empty()) {
+                let tempSet = d3.set();
+                sourceSet.forEach(function (value) {
+                    if (target_link_map.get(value) != null) {
+                        let linkArray = target_link_map.get(value);
+                        console.log(linkArray.length);
+                        linkArray.forEach(function (item) {
+                            tempSet.add(item.__data__.source.id);
+                            sourceIds.add(item.__data__.source.id);
+                        });
+                    }
+                });
+                sourceSet = tempSet;
+                tempSet = null;
+
+            }
+
+            while (!targetSet.empty()) {
+                let tempSet = d3.set();
+                targetSet.forEach(function (value) {
+                    if (source_link_map.get(value) != null) {
+                        let linkArray = source_link_map.get(value);
+                        linkArray.forEach(function (item) {
+                            tempSet.add(item.__data__.target.id);
+                            targetIds.add(item.__data__.target.id);
+                        });
+                    }
+                });
+                targetSet = tempSet;
+                tempSet = null;
+            }
+            // console.log(targetIds);
+            // console.log(sourceIds);
+            let key = sourceId.concat('#', targetId);
+            let filterLinks = links.filter(function (path) {
+                let anotherSourceId = path.source.id;
+                let anotherTargetId = path.target.id;
+                let anotherKey = anotherSourceId.concat('#', anotherTargetId);
+                // return anotherKey != key;
+                // return anotherSourceId != targetId && anotherTargetId != sourceId && anotherKey != key;
+                return !targetIds.has(anotherSourceId) && !sourceIds.has(anotherTargetId) && anotherKey != key;
+            });
+            filterLinks.style('opacity', 0.2);
+            // console.log(data.value);
+            //recycle the memory
+            targetSet = null;
+            sourceSet = null;
+            // console.log(projection)
+            let parameter_paths = projection[0];
+            if (parameter_path_map == undefined) {
+                parameter_path_map = d3.map();
+                parameter_paths.forEach(function (element) {
+                    let data = element.__data__;
+                    let time = data.time;
+                    let good_edit = data.good_edit;
+                    let bad_edit = data.bad_edit;
+                    let key = time + '#' + good_edit + '#' + bad_edit;
+                    parameter_path_map.set(key, element);
+                });
+            }
+            // console.log(parameter_path_map)
+            // console.log(sourceIds);
+            // console.log(targetIds);
+            let node_ids = new Array();
+            sourceIds.forEach(function (item) {
+                node_ids.push(item);
+            });
+            targetIds.forEach(function (item) {
+                node_ids.push(item);
+            })
+
+            //request data
+            axios.get('http://127.0.0.1:8000/wiki/param', {
+                params: {
+                    node_ids: JSON.stringify(node_ids)
+                }
+            }).then(function (response) {
+                console.log(response.data);
+                let link_list = response.data;
+                if (link_list.length == 0) {
+                    return;
+                }
+                let sourceIds = d3.set();
+                let targetIds = d3.set();
+                link_list.forEach(function (element) {
+                    sourceIds.add(element.source);
+                    targetIds.add(element.target);
+                })
+                let filterLinks = links.filter(function (path) {
+                    let anotherSourceId = path.source.id;
+                    let anotherTargetId = path.target.id;
+                    return !targetIds.has(anotherSourceId) && !sourceIds.has(anotherTargetId);
+                });
+                filterLinks.style('opacity', 0.2);
+            }).catch(function (error) {
+                console.log(error);
+            });
+        });
+
+        links.on("mouseout", function (data) {
+            links.style('opacity', 1);
+        });
+        link = links[0][0];
     });
+    // let mouseout_event = new Event('mouseout');
+    // link.dispatchEvent(mouseout_event);
 
 </script>

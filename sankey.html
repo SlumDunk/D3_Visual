@@ -16,8 +16,8 @@
         }
 
         #chart {
-            height: 500px;
-            font: 13px sans-serif;
+            height: 600px;
+            font: 9px sans-serif;
         }
 
         .node rect {
@@ -41,7 +41,7 @@
 <div id="chart"></div>
 
 <script>
-    var colors = {
+    let colors = {
         'environment': '#edbd00',
         'social': '#367d85',
         'animals': '#97ba4c',
@@ -53,8 +53,12 @@
         'FP': '#3f3e47',
         'FN': '#367d85'
     };
-    d3.json("./data/wiki.json", function (error, json) {
+    d3.json("./data/wiki_test.json", function (error, json) {
         let chart = d3.select("#chart").append("svg").chart("Sankey.Path");
+        let svg = d3.select("svg")[0];
+        let g = svg[0].firstChild;
+        g.setAttribute("transform", "translate(" + 10 + "," + 10 + ")");
+
         chart
             .name(label)
             .colorNodes(function (name, node) {

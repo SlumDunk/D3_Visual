@@ -324,17 +324,19 @@
 
         //define mouseout function
         function mouseout(d) {
-            svg.classed("active", false);
-            projection.classed("inactive", false);
-            ordinal_labels.classed("inactive", false);
+            // svg.classed("active", false);
+            // projection.classed("inactive", false);
+            // ordinal_labels.classed("inactive", false);
+            activate_parallel_coordinates(svg);
             tooltip.style("opacity", 0.0);
-        }
-
-        //hightlight the selected line
-        function moveToFront() {
-            this.parentNode.appendChild(this);
+            links.style('opacity', 1);
         }
     });
+
+    //hightlight the selected line
+    function moveToFront() {
+        this.parentNode.appendChild(this);
+    }
 
     //draw the lines
     function draw(d) {
@@ -343,6 +345,12 @@
         }));
     }
 
+    //activate all the paths in the parallel coordinates
+    function activate_parallel_coordinates() {
+        svg.classed("active", false);
+        projection.classed("inactive", false);
+        ordinal_labels.classed("inactive", false);
+    }
 
     d3.json("./data/wiki_test.json", function (error, json) {
         let chart = d3.select("#right-div").append("svg").chart("Sankey.Path");
@@ -504,23 +512,15 @@
                     node_ids: JSON.stringify(node_ids)
                 }
             }).then(function (response) {
-                console.log(response.data);
-                let link_list = response.data;
-                if (link_list.length == 0) {
-                    return;
-                }
-                let sourceIds = d3.set();
-                let targetIds = d3.set();
-                link_list.forEach(function (element) {
-                    sourceIds.add(element.source);
-                    targetIds.add(element.target);
-                })
-                let filterLinks = links.filter(function (path) {
-                    let anotherSourceId = path.source.id;
-                    let anotherTargetId = path.target.id;
-                    return !targetIds.has(anotherSourceId) && !sourceIds.has(anotherTargetId);
+                // console.log(response.data);
+                let path_keys = response.data;
+                let path_map_copy = cloneMap(parameter_path_map);
+                // console.log(path_map_copy.size());
+                path_keys.forEach(function (key) {
+                    path_map_copy.remove(key);
                 });
-                filterLinks.style('opacity', 0.2);
+                // console.log(path_map_copy.size());
+                activate_path(path_map_copy);
             }).catch(function (error) {
                 console.log(error);
             });
@@ -528,9 +528,35 @@
 
         links.on("mouseout", function (data) {
             links.style('opacity', 1);
+            activate_parallel_coordinates();
         });
         link = links[0][0];
     });
+
+    //clone map
+    function cloneMap(map) {
+        let map_copy = d3.map();
+        map.forEach(function (key, value) {
+            map_copy.set(key, value);
+        })
+        return map_copy;
+    }
+
+    //activate the path related to the sankey link
+    function activate_path(path_map) {
+        svg.classed("active", true);
+        projection.classed("inactive", function (p) {
+            let key = p.time + '#' + p.good_edit + '#' + p.bad_edit;
+            let value = path_map.get(key);
+            return value !== undefined;
+        });
+        projection.filter(function (p) {
+            let key = p.time + '#' + p.good_edit + '#' + p.bad_edit;
+            let value = path_map.get(key);
+            return value === undefined;
+        }).each(moveToFront);
+    }
+
     // let mouseout_event = new Event('mouseout');
     // link.dispatchEvent(mouseout_event);
 

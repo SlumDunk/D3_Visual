@@ -300,7 +300,7 @@
                             return !targetIds.has(anotherSourceId) && !sourceIds.has(anotherTargetId);
                         });
                         filterLinks.style('opacity', 0.2);
-                        render_scatter_plot();
+                        render_scatter_plot(d.time, d.good_edit, d.bad_edit);
                     }).catch(function (error) {
                         console.log(error);
                     });
@@ -338,7 +338,7 @@
         ordinal_labels.classed("inactive", false);
     }
 
-    d3.json("./data/wiki_test.json", function (error, json) {
+    d3.json("./data/wiki_full.json", function (error, json) {
         let chart = d3.select("#right-div").append("svg").chart("Sankey.Path");
         let svg = d3.select("#right-div")[0][0].lastChild;
         let g = svg.firstChild;
@@ -547,9 +547,9 @@
     // link.dispatchEvent(mouseout_event);
 
     //create scatter plot
-    function render_scatter_plot() {
-        let old_svg=d3.select("#scatter-plot");
-        if(old_svg!=undefined) {
+    function render_scatter_plot(time, good_edit, bad_edit) {
+        let old_svg = d3.select("#scatter-plot");
+        if (old_svg != undefined) {
             old_svg.remove();
         }
         // setup x
@@ -579,14 +579,18 @@
             color = d3.scale.category10();
 
         // add the graph canvas to the body of the webpage
-        let scatter_plot = d3.select("#bottom-div").append("svg").attr("id","scatter-plot")
+        let scatter_plot = d3.select("#bottom-div").append("svg").attr("id", "scatter-plot")
             .attr("width", width + margin.left + margin.right)
             .attr("height", height + margin.top + margin.bottom)
             .append("g")
             .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
         // load data
-        d3.json("./data/cereal.json", function (error, data) {
+        //http://127.0.0.1:8000/wiki/data?time=5&good_edit=95&bad_edit=90
+        // d3.json("./data/cereal.json", function (error, data) {
+        // let url = 'http://127.0.0.1:8000/wiki/data?time=' + 5 + '&good_edit=' + 95 + '&bad_edit=' + 90
+        let url = 'http://127.0.0.1:8000/wiki/data?time=' + time + '&good_edit=' + good_edit + '&bad_edit=' + bad_edit
+        d3.json(url, function (error, data) {
 
             // change string (from CSV) into number format
             data.forEach(function (d) {

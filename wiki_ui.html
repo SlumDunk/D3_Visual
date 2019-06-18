@@ -587,10 +587,10 @@
 
         // load data
         //http://127.0.0.1:8000/wiki/data?time=5&good_edit=95&bad_edit=90
-        // d3.json("./data/cereal.json", function (error, data) {
+        d3.json("./data/cereal.json", function (error, data) {
         // let url = 'http://127.0.0.1:8000/wiki/data?time=' + 5 + '&good_edit=' + 95 + '&bad_edit=' + 90
-        let url = 'http://127.0.0.1:8000/wiki/data?time=' + time + '&good_edit=' + good_edit + '&bad_edit=' + bad_edit
-        d3.json(url, function (error, data) {
+        // let url = 'http://127.0.0.1:8000/wiki/data?time=' + time + '&good_edit=' + good_edit + '&bad_edit=' + bad_edit
+        // d3.json(url, function (error, data) {
 
             // change string (from CSV) into number format
             data.forEach(function (d) {

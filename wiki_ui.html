@@ -121,10 +121,10 @@
         height = 600 - margin.top - margin.bottom;
 
     let colors = {
-        'TP': '#97ba4c',
-        'TN': '#f5662b',
-        'FP': '#3f3e47',
-        'FN': '#367d85'
+        'TP': 'orange',
+        'TN': 'green',
+        'FP': 'red',
+        'FN': 'blue'
     };
     let link;
     let nodes;
@@ -288,18 +288,16 @@
                         if (link_list.length == 0) {
                             return;
                         }
-                        let sourceIds = d3.set();
-                        let targetIds = d3.set();
+                        let link_array = new Array();
                         link_list.forEach(function (element) {
-                            sourceIds.add(element.source);
-                            targetIds.add(element.target);
+                            link_array.push(element.source + '#' + element.target);
                         })
                         let filterLinks = links.filter(function (path) {
                             let anotherSourceId = path.source.id;
                             let anotherTargetId = path.target.id;
-                            return !targetIds.has(anotherSourceId) && !sourceIds.has(anotherTargetId);
+                            return !in_array(anotherSourceId + '#' + anotherTargetId, link_array);
                         });
-                        filterLinks.style('opacity', 0.2);
+                        filterLinks.style('opacity', 0.02);
                         render_scatter_plot(d.time, d.good_edit, d.bad_edit);
                     }).catch(function (error) {
                         console.log(error);
@@ -463,7 +461,7 @@
                 // return anotherSourceId != targetId && anotherTargetId != sourceId && anotherKey != key;
                 return !targetIds.has(anotherSourceId) && !sourceIds.has(anotherTargetId) && anotherKey != key;
             });
-            filterLinks.style('opacity', 0.2);
+            filterLinks.style('opacity', 0.02);
             // console.log(data.value);
             //recycle the memory
             targetSet = null;
@@ -588,9 +586,9 @@
         // load data
         //http://127.0.0.1:8000/wiki/data?time=5&good_edit=95&bad_edit=90
         d3.json("./data/cereal.json", function (error, data) {
-        // let url = 'http://127.0.0.1:8000/wiki/data?time=' + 5 + '&good_edit=' + 95 + '&bad_edit=' + 90
-        // let url = 'http://127.0.0.1:8000/wiki/data?time=' + time + '&good_edit=' + good_edit + '&bad_edit=' + bad_edit
-        // d3.json(url, function (error, data) {
+            // let url = 'http://127.0.0.1:8000/wiki/data?time=' + 5 + '&good_edit=' + 95 + '&bad_edit=' + 90
+            // let url = 'http://127.0.0.1:8000/wiki/data?time=' + time + '&good_edit=' + good_edit + '&bad_edit=' + bad_edit
+            // d3.json(url, function (error, data) {
 
             // change string (from CSV) into number format
             data.forEach(function (d) {
@@ -680,6 +678,23 @@
                 })
         });
         console.log('render scatter plot successfully');
+    }
+
+    /**
+     * assert whether the target string in the array
+     * @param stringToSearch
+     * @param arrayToSearch
+     * @returns {boolean}
+     */
+    function in_array(stringToSearch, arrayToSearch) {
+        for (let i = 0; i < arrayToSearch.length; i++) {
+            let item = arrayToSearch[i].toString();
+            if (item == stringToSearch) {
+                console.log(stringToSearch);
+                return true;
+            }
+        }
+        return false;
     }
 
 

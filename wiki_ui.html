@@ -278,9 +278,12 @@
                     //request data
                     axios.get('http://127.0.0.1:8000/wiki/model/result', {
                         params: {
-                            time: d.time,
-                            good_edit: d.good_edit,
-                            bad_edit: d.bad_edit
+                            time_start: d.time,
+                            time_end: d.time,
+                            good_start: d.good_edit,
+                            good_end: d.good_edit,
+                            bad_start: d.bad_edit,
+                            bad_end: d.bad_edit
                         }
                     }).then(function (response) {
                         console.log(response.data);

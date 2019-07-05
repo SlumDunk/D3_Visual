@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<title>Parallel Coordinates Ordinal Axis</title>
+<style>
+    svg {
+        font: 13px sans-serif;
+    }
+
+    .background path {
+        fill: none;
+        stroke: none;
+        stroke-width: 10px;
+        pointer-events: stroke;
+    }
+
+    .foreground path {
+        fill: none;
+        stroke: steelblue;
+        stroke-width: 1.5px;
+    }
+
+    .axis .title {
+        font-size: 8px;
+        font-weight: bold;
+        text-transform: uppercase;
+    }
+
+    .axis line,
+    .axis path {
+        fill: none;
+        stroke: #000;
+        shape-rendering: crispEdges;
+    }
+
+    .axis.string {
+        font-size: 6px;
+    }
+
+    .label {
+        -webkit-transition: fill 125ms linear;
+    }
+
+    .dot {
+        stroke: #000;
+    }
+
+    .active .label:not(.inactive) {
+        font-weight: bold;
+        font-size: 9px;
+    }
+
+    .foreground path.inactive {
+        stroke: #ccc;
+        stroke-opacity: .5;
+        stroke-width: 1px;
+    }
+
+    .tooltip {
+        position: absolute;
+        width: 120px;
+        height: auto;
+        font-family: simsun;
+        font-size: 14px;
+        text-align: center;
+        border-style: solid;
+        border-width: 1px;
+        background-color: white;
+        border-radius: 5px;
+        text-align: left;
+        pointer-events: none;
+    }
+
+    .container {
+        position: relative;
+        width: 1800px;
+        height: 600px;
+    }
+
+    #right-div {
+        font: 13px sans-serif;
+    }
+
+    .node rect {
+        fill-opacity: .9;
+        shape-rendering: crispEdges;
+        stroke-width: 0;
+    }
+
+    .node text {
+        text-shadow: 0 1px 0 #fff;
+    }
+
+    .link {
+        fill: none;
+        stroke: #000;
+        stroke-opacity: .2;
+    }
+
+    .brush_1 .extent {
+        stroke: #fff;
+        fill: red;
+        fill-opacity: .25;
+        shape-rendering: crispEdges;
+    }
+
+    .brush_2 .extent {
+        stroke: #fff;
+        fill: greenyellow;
+        fill-opacity: .25;
+        shape-rendering: crispEdges;
+    }
+
+    .brush_3 .extent {
+        stroke: #fff;
+        fill: deepskyblue;
+        fill-opacity: .25;
+        shape-rendering: crispEdges;
+    }
+</style>
+<body>
+<div class="container">
+    <div id="left-div" style="width:33.3%;height:100%;float:left;"></div>
+    <div id='right-div' style="width:33.3%;height:100%;float:left;"></div>
+    <div id="bottom-div" style="width:33.3%;height:100%;float:left;"></div>
+</div>
+</body>
+<script src="./js/axios.min.js"></script>
+<script src="./js/d3.v3.min.js"></script>
+<script src="./js/sankey.js"></script>
+<script src="./js/d3.chart.min.js"></script>
+<script src="./js/d3.chart.sankey.min.js"></script>
+<script>
+    //define the tooltip to show the detail information
+    let tooltip = d3.select("body")
+        .append("div")
+        .attr("class", "tooltip")
+        .style("opacity", 0.0);
+
+    //define the margin information
+    let margin = {top: 25, right: 50, bottom: 25, left: 50},
+        width = 600 - margin.left - margin.right,
+        height = 600 - margin.top - margin.bottom;
+
+    let colors = {
+        'TP': 'orange',
+        'TN': 'green',
+        'FP': 'red',
+        'FN': 'blue'
+    };
+    let link;
+    let nodes;
+    let links;
+    let link_map;
+    let target_link_map;
+    let source_link_map;
+    let linkArray;
+    let parameter_path_map;
+
+    let projection;
+    let ordinal_labels;
+
+    let chart;
+    let prev_json;
+    let current_json;
+    //the new links be added last time
+    let count = 0;
+
+    /**render the left div start------------------------------------------------------------------------------------------------------**/
+
+    let time_start = 0;
+    let time_end = 10;
+
+    let good_start = 0;
+    let good_end = 10;
+
+    let bad_start = 0;
+    let bad_end = 10;
+
+    let data = [];
+    //construct parameters
+    for (let i = 0; i < 20; i++) {
+        let item = {};
+        item.date = 5 * i;
+        item.price = Math.floor(Math.random() * 600);
+        data.push(item);
+    }
+
+    let margin2 = {top: 450, right: 10, bottom: 20, left: 40},
+        height2 = 600 - margin2.top - margin2.bottom;
+
+    let x2 = d3.scale.ordinal().rangeBands([0, width], .1),
+        y2 = d3.scale.linear().range([height2, 0]);
+
+    let xAxis2 = d3.svg.axis().scale(x2).orient("bottom");
+
+    x2.domain(data.map(function (d) {
+        return d.date
+    }));
+    y2.domain([0, d3.max(data, function (d) {
+        return d.price;
+    })]);
+
+    let brush_1 = d3.svg.brush()
+        .x(x2)
+        .on("brushend", brushed_1);
+
+    let brush_2 = d3.svg.brush()
+        .x(x2)
+        .on("brushend", brushed_2);
+
+    let brush_3 = d3.svg.brush()
+        .x(x2)
+        .on("brushend", brushed_3);
+
+    let svg = d3.select("#left-div").append("svg")
+        .attr("width", width + margin.left + margin.right)
+        .attr("height", height + margin.top + margin.bottom);
+
+    let context = svg.append("g")
+        .attr("class", "context");
+
+
+    let gap_y = 60, gap = 59;
+
+    //time parameter
+    context.append("g")
+        .attr("class", "x axis")
+        .attr("transform", "translate(0," + height2 + ")")
+        .call(xAxis2);
+
+    svg.append("text")
+        .attr("transform",
+            "translate(" + (width / 2) + " ," +
+            (height2 + margin.top + 10) + ")")
+        .style("text-anchor", "middle")
+        .text("Time");
+
+
+    context.append("g")
+        .attr("class", "x brush_1")
+        .call(brush_1)
+        // .call(brush_1.extent,[0,60])
+        .selectAll("rect")
+        .attr("y", gap_y)
+        .attr("height", height2 - gap);
+
+    //good edit parameter
+    context.append("g")
+        .attr("class", "x axis")
+        .attr("transform", "translate(0," + height2 * 2 + ")")
+        .call(xAxis2);
+
+    svg.append("text")
+        .attr("transform",
+            "translate(" + (width / 2) + " ," +
+            (height2 * 2 + margin.top + 10) + ")")
+        .style("text-anchor", "middle")
+        .text("Good_Edit");
+
+    context.append("g")
+        .attr("class", "x brush_2")
+        .call(brush_2)
+        // .call(brush_2.extent,[0,60])
+        .selectAll("rect")
+        .attr("y", height2 + gap_y)
+        .attr("height", height2 - gap);
+
+    //bad edit parameter
+    context.append("g")
+        .attr("class", "x axis")
+        .attr("transform", "translate(0," + height2 * 3 + ")")
+        .call(xAxis2);
+
+    svg.append("text")
+        .attr("transform",
+            "translate(" + (width / 2) + " ," +
+            (height2 * 3 + margin.top + 10) + ")")
+        .style("text-anchor", "middle")
+        .text("Bad_Edit");
+
+    context.append("g")
+        .attr("class", "x brush_3")
+        .call(brush_3)
+        // .call(brush_3.extent,[0,60])
+        .selectAll("rect")
+        .attr("y", height2 * 2 + gap_y)
+        .attr("height", height2 - gap);
+
+    /**
+     * first brush
+     * */
+    function brushed_1() {
+        brush_end(1);
+    }
+
+    /**
+     * second brush
+     * */
+    function brushed_2() {
+        brush_end(2);
+
+    }
+
+    /**
+     * third brush
+     * */
+    function brushed_3() {
+        brush_end(3);
+
+    }
+
+    /**
+     * 刷子滑动结束后的动作
+     * */
+    function brush_end(flag) {
+        let brush;
+        if (flag == 1) {
+            brush = brush_1;
+        }
+
+        if (flag == 2) {
+            brush = brush_2;
+        }
+
+        if (flag == 3) {
+            brush = brush_3;
+        }
+
+        let selected;
+        selected = x2.domain()
+            .filter(function (d) {
+                // console.log(d);
+                return (brush.extent()[0] <= x2(d)) && (x2(d) <= brush.extent()[1]);
+            });
+
+        let start;
+        let end;
+
+        if (brush.extent()[0] != brush.extent()[1]) {//adjust the range
+            start = selected[0] - (x2(selected[0]) >= brush.extent()[0] ? 5 : 0);
+            end = selected[selected.length - 1] + (x2(selected[selected.length - 1]) >= brush.extent()[1] ? 0 : 5);
+        } else {
+            start = 0;
+            end = data.length;
+        }
+        // console.log(start + "#" + end);
+
+        if (flag == 1) {
+            time_start = start;
+            time_end = end;
+        }
+
+        if (flag == 2) {
+            good_start = start;
+            good_end = end;
+        }
+
+        if (flag == 3) {
+            bad_start = start;
+            bad_end = end;
+        }
+
+        //request data
+        axios.get('http://127.0.0.1:8000/wiki/model/result', {
+            params: {
+                time_start: time_start,
+                time_end: time_end,
+                good_start: good_start,
+                good_end: good_end,
+                bad_start: bad_start,
+                bad_end: bad_end
+            }
+        }).then(function (response) {
+            let link_list = response.data;
+            if (link_list.length == 0) {
+                return;
+            }
+            //add new link
+            //要移除的旧的link
+            let remove_links = new Array();
+            //上一次保存下来的link
+            let prev_link_array = new Array();
+            //要显示的link
+            let link_array = new Array();
+            let filterLinks;
+
+            if (count > 0) {
+                let len = prev_json.links.length;
+                for (let i = len - count - 1; i < len; i++) {
+                    let link = prev_json.links[i];
+                    remove_links.push(link.source + '#' + link.target);
+                }
+                prev_json.links.splice(prev_json.links.length - count - 1, count);
+                count = 0;
+            }
+            //获取要保留的link
+            links.filter(function (path) {
+                if (!in_array(path.source.id + '#' + path.target.id, remove_links)) {
+                    prev_link_array.push(path.source.id + '#' + path.target.id);
+                }
+            });
+
+            //遍历返回的link，获取要新添加的Link
+            link_list.forEach(function (element) {
+                if (!in_array(element.source + '#' + element.target, prev_link_array)) {
+                    prev_json.links.push(element);
+                    count++;
+                }
+                link_array.push(element.source + '#' + element.target);
+            })
+
+            current_json = JSON.parse(JSON.stringify(prev_json));
+            chart.draw(current_json);
+
+            nodes = d3.selectAll('.node');
+            links = d3.selectAll('.link');
+
+            filterLinks = links.filter(function (path) {
+                let anotherSourceId = path.source.id;
+                let anotherTargetId = path.target.id;
+                return !in_array(anotherSourceId + '#' + anotherTargetId, link_array);
+            });
+
+            links.style('opacity', 1);
+            filterLinks.style('opacity', 0.02);
+            render_scatter_plot(time_start, time_end, good_start, good_end, bad_start, bad_end);
+
+            //要移除的旧的link
+            remove_links = null;
+            //上一次保存下来的link
+            prev_link_array = null;
+            //要显示的link
+            link_array = null;
+            filterLinks = null;
+        }).catch(function (error) {
+            console.log(error);
+        });
+
+    }
+
+    //set the default range
+    d3.selectAll(".extent").attr('width', x2(10) - x2(0));
+    brush_1.extent([x2(0), x2(10)]);
+    brush_2.extent([x2(0), x2(10)]);
+    brush_3.extent([x2(0), x2(10)]);
+
+    /**render the left div end------------------------------------------------------------------------------------------------------**/
+
+
+    /**render the center div start------------------------------------------------------------------------------------------------------**/
+
+    d3.json("./data/wiki_full.json", function (error, json) {
+        prev_json = JSON.parse(JSON.stringify(json));
+        chart = d3.select("#right-div").append("svg").chart("Sankey.Path");
+        let svg = d3.select("#right-div")[0][0].lastChild;
+        let g = svg.firstChild;
+        g.setAttribute("transform", "translate(" + 10 + "," + 10 + ")");
+
+        chart
+            .name(label)
+            .colorNodes(function (name, node) {
+                return color(node, 1) || colors.fallback;
+            })
+            .colorLinks(function (link) {
+                return color(link.source, 4) || color(link.target, 1) || colors.fallback;
+            })
+            .nodeWidth(15)
+            .nodePadding(10)
+            .spread(true)
+            .iterations(0)
+            .draw(json);
+
+        nodes = d3.selectAll('.node');
+        links = d3.selectAll('.link');
+        link_map = d3.map();
+        target_link_map = d3.map();
+        source_link_map = d3.map();
+        linkArray = links[0];
+        linkArray.forEach(function (element) {
+            let data = element.__data__;
+            let sourceId = data.source.id;
+            let targetId = data.target.id;
+            let key = sourceId.concat('#', targetId);
+            link_map.set(key, element);
+            let targetLinkArray;
+            if (target_link_map.get(targetId) == null) {
+                targetLinkArray = new Array();
+                targetLinkArray.push(element);
+            } else {
+                targetLinkArray = target_link_map.get(targetId);
+                targetLinkArray.push(element);
+            }
+            target_link_map.set(targetId, targetLinkArray);
+            let sourceLinkArray;
+            if (source_link_map.get(sourceId) == null) {
+                sourceLinkArray = new Array();
+                sourceLinkArray.push(element);
+            } else {
+                sourceLinkArray = source_link_map.get(sourceId);
+                sourceLinkArray.push(element);
+            }
+            source_link_map.set(sourceId, sourceLinkArray);
+        });
+
+        nodes.on("mouseover", function (data) {
+
+        });
+        links.on("mouseover", function (data) {
+
+        });
+        links.on("mouseout", function (data) {
+            // links.style('opacity', 1);
+        });
+        nodes.on("mouseout", function (data) {
+            // links.style('opacity', 1);
+        });
+    });
+
+    //clone map
+    function cloneMap(map) {
+        let map_copy = d3.map();
+        map.forEach(function (key, value) {
+            map_copy.set(key, value);
+        })
+        return map_copy;
+    }
+
+    function label(node) {
+        return node.name.replace(/\s*\(.*?\)$/, '');
+    }
+
+    function color(node, depth) {
+        let id = node.id.replace(/(_score)?(_\d+)?$/, '');
+        if (colors[id]) {
+            return colors[id];
+        } else if (depth > 0 && node.targetLinks && node.targetLinks.length == 1) {
+            return color(node.targetLinks[0].source, depth - 1);
+        } else {
+            return null;
+        }
+    }
+
+    /**render the center div end------------------------------------------------------------------------------------------------------**/
+
+
+    /**render the bottom div start------------------------------------------------------------------------------------------------------**/
+    function render_scatter_plot(time_start, time_end, good_start, good_end, bad_start, bad_end) {
+        let old_svg = d3.select("#scatter-plot");
+        if (old_svg != undefined) {
+            old_svg.remove();
+        }
+        // setup x
+        let xValue = function (d) {
+                return d.x;
+            }, // data -> value
+            xScale = d3.scale.linear().range([0, width]), // value -> display
+            xMap = function (d) {
+                return xScale(xValue(d));
+            }, // data -> display
+            xAxis = d3.svg.axis().scale(xScale).orient("bottom");
+
+        // setup y
+        let yValue = function (d) {
+                return d.y;
+            }, // data -> value
+            yScale = d3.scale.linear().range([height, 0]), // value -> display
+            yMap = function (d) {
+                return yScale(yValue(d));
+            }; // data -> display
+        yAxis = d3.svg.axis().scale(yScale).orient("left");
+
+        // setup fill color
+        let cValue = function (d) {
+                if (d.classification == 'TN' || d.classification == 'FN') {
+                    return 'Vandal User';
+                } else {
+                    return 'Benign User';
+                }
+                // return d.classification;
+            },
+            color = d3.scale.category10();
+
+        // add the graph canvas to the body of the webpage
+        let scatter_plot = d3.select("#bottom-div").append("svg").attr("id", "scatter-plot")
+            .attr("width", width + margin.left + margin.right)
+            .attr("height", height + margin.top + margin.bottom)
+            .append("g")
+            .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+        // load data
+        axios.get('http://127.0.0.1:8000/wiki/data', {
+            params: {
+                time_start: time_start,
+                time_end: time_end,
+                good_start: good_start,
+                good_end: good_end,
+                bad_start: bad_start,
+                bad_end: bad_end
+            }
+        }).then(function (response) {
+            let data = response.data;
+            // don't want dots overlapping axis, so add in buffer to data domain
+            xScale.domain([d3.min(data, xValue) - 1, d3.max(data, xValue) + 1]);
+            yScale.domain([d3.min(data, yValue) - 1, d3.max(data, yValue) + 1]);
+
+            // x-axis
+            scatter_plot.append("g")
+                .attr("class", "x axis")
+                .attr("transform", "translate(0," + height + ")")
+                .call(xAxis)
+                .append("text")
+                .attr("class", "label")
+                .attr("x", width)
+                .attr("y", -6)
+                .style("text-anchor", "end")
+                .text("x");
+
+            // y-axis
+            scatter_plot.append("g")
+                .attr("class", "y axis")
+                .call(yAxis)
+                .append("text")
+                .attr("class", "label")
+                .attr("transform", "rotate(-90)")
+                .attr("y", 6)
+                .attr("dy", ".71em")
+                .style("text-anchor", "end")
+                .text("y");
+
+            // draw dots
+            scatter_plot.selectAll(".dot")
+                .data(data)
+                .enter().append("circle")
+                .attr("class", "dot")
+                .attr("r", 3.5)
+                .attr("cx", xMap)
+                .attr("cy", yMap)
+                .style("fill", function (d) {
+                    return color(cValue(d));
+                })
+                .on("mouseover", function (d) {
+                    let x = d3.event.pageX;
+                    let y = d3.event.pageY;
+                    axios.get('http://127.0.0.1:8000/wiki/user', {
+                        params: {
+                            row_id: 5,
+                        }
+                    }).then(function (response) {
+                        let user = response.data;
+                        tooltip.transition()
+                            .duration(200)
+                            .style("opacity", .9);
+                        tooltip.html(user)
+                            .style("left", (x + 5) + "px")
+                            .style("top", (y - 28) + "px");
+                    });
+                })
+                .on("mouseout", function (d) {
+                    tooltip.transition()
+                        .duration(500)
+                        .style("opacity", 0);
+                });
+
+
+            // draw legend
+            let legend = scatter_plot.selectAll(".legend")
+                .data(color.domain())
+                .enter().append("g")
+                .attr("class", "legend")
+                .attr("transform", function (d, i) {
+                    return "translate(0," + i * 20 + ")";
+                });
+
+            // draw legend colored rectangles
+            legend.append("rect")
+                .attr("x", width - 18)
+                .attr("width", 18)
+                .attr("height", 18)
+                .style("fill", color);
+
+            // draw legend text
+            legend.append("text")
+                .attr("x", width - 24)
+                .attr("y", 9)
+                .attr("dy", ".35em")
+                .style("text-anchor", "end")
+                .text(function (d) {
+                    return d;
+                });
+            console.log('render scatter plot successfully');
+        }).catch(function (error) {
+            console.log(error);
+        });
+    }
+
+    /**render the bottom div end------------------------------------------------------------------------------------------------------**/
+
+    /**
+     * assert whether the target string in the array
+     * @param stringToSearch
+     * @param arrayToSearch
+     * @returns {boolean}
+     */
+    function in_array(stringToSearch, arrayToSearch) {
+        for (let i = 0; i < arrayToSearch.length; i++) {
+            let item = arrayToSearch[i].toString();
+            if (item == stringToSearch) {
+                // console.log(stringToSearch);
+                return true;
+            }
+        }
+        return false;
+    }
+
+
+</script>

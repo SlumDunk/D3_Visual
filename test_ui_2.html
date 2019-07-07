@@ -1,137 +1,19 @@
-<!DOCTYPE html>
-<meta charset="utf-8">
-<style>
-
-    svg {
-        font: 10px sans-serif;
-    }
-
-    .subBar {
-        fill: gray;
-        opacity: 0.5;
-    }
-
-    .axis path,
-    .axis line {
-        fill: none;
-        stroke: #000;
-        shape-rendering: crispEdges;
-    }
-
-    .brush .extent {
-        stroke: #fff;
-        fill: steelblue;
-        fill-opacity: .25;
-        shape-rendering: crispEdges;
-    }
-
-</style>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Visualization</title>
+    <link rel="stylesheet" href="scatter.css" charset="utf-8">
+</head>
 <body>
-<script src="http://d3js.org/d3.v3.min.js"></script>
-<script>
+<div id="scatter"></div>
 
-    var data = [];
-    //构造数据集
-    for (var i = 0; i < 20; i++) {
-        var datum = {};
-        datum.date = 5 * i;
-        datum.price = Math.floor(Math.random() * 600);
-        data.push(datum);
-    }
+<input type="button" name="xAxis" value="xAxis">
 
-    var margin = {top: 10, right: 10, bottom: 100, left: 40},
-        margin2 = {top: 430, right: 10, bottom: 20, left: 40},
-        width = 750 - margin.left - margin.right,
-        height = 500 - margin.top - margin.bottom,
-        height2 = 500 - margin2.top - margin2.bottom;
+<script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+<script src="http://labratrevenge.com/d3-tip/javascripts/d3.tip.v0.6.3.js"></script>
+<script src="./js/axios.min.js"></script>
+<script src="scatter.js" charset="utf-8"></script>
 
-    var x2 = d3.scale.ordinal().rangeBands([0, width], .1),
-        y2 = d3.scale.linear().range([height2, 0]);
+</body>
+</html>
 
-    var xAxis2 = d3.svg.axis().scale(x2).orient("bottom");
-
-    x2.domain(data.map(function (d) {
-        return d.date
-    }));
-    y2.domain([0, d3.max(data, function (d) {
-        return d.price;
-    })]);
-
-    var brush = d3.svg.brush()
-        .x(x2)
-        .on("brush", brushed);
-
-    var svg = d3.select("body").append("svg")
-        .attr("width", width + margin.left + margin.right)
-        .attr("height", height + margin.top + margin.bottom);
-
-
-    var context = svg.append("g")
-        .attr("class", "context");
-
-
-    //time parameter
-    context.append("g")
-        .attr("class", "x axis")
-        .attr("transform", "translate(0," + height2 + ")")
-        .call(xAxis2);
-
-    context.append("g")
-        .attr("class", "x brush")
-        .call(brush)
-        .selectAll("rect")
-        .attr("y", 20)
-        .attr("height", height2 - 19);
-
-    //good edit parameter
-    context.append("g")
-        .attr("class", "x axis")
-        .attr("transform", "translate(0," + height2 * 2 + ")")
-        .call(xAxis2);
-
-    context.append("g")
-        .attr("class", "x brush")
-        .call(brush)
-        .selectAll("rect")
-        .attr("y", height2 + 20)
-        .attr("height", height2 - 19);
-
-    //bad edit parameter
-    context.append("g")
-        .attr("class", "x axis")
-        .attr("transform", "translate(0," + height2 * 3 + ")")
-        .call(xAxis2);
-
-    context.append("g")
-        .attr("class", "x brush")
-        .call(brush)
-        .selectAll("rect")
-        .attr("y", height2 * 2 + 20)
-        .attr("height", height2 - 19);
-
-
-    /**
-     * 刷子滑动结束后的动作
-     * */
-    function brushed() {
-        var selected;
-        selected = x2.domain()
-            .filter(function (d) {
-                return (brush.extent()[0] <= x2(d)) && (x2(d) <= brush.extent()[1]);
-            });
-
-        var start;
-        var end;
-
-        if (brush.extent()[0] != brush.extent()[1]) {
-            start = selected[0];
-            end = selected[selected.length - 1] + 1;
-        } else {
-            start = 0;
-            end = data.length;
-        }
-        console.log(start + '#' + end);
-
-    }
-
-</script>

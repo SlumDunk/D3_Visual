@@ -16,13 +16,13 @@ let xCat = "x",
 
 
 let cValue = function (d) {
-        if (d.classification == 'TN' || d.classification == 'FN') {
-            return 'Vandal User';
-        } else {
-            return 'Benign User';
-        }
-        // return d.classification;
-    };
+    if (d.classification == 'TN' || d.classification == 'FN') {
+        return 'Vandal User';
+    } else {
+        return 'Benign User';
+    }
+    // return d.classification;
+};
 
 axios.get('http://127.0.0.1:8000/wiki/data', {
     params: {
@@ -34,7 +34,7 @@ axios.get('http://127.0.0.1:8000/wiki/data', {
         bad_end: 10
     }
 }).then(function (response) {
-    let data=response.data;
+    let data = response.data;
 
     let xMax = d3.max(data, function (d) {
             return d[xCat];
@@ -78,7 +78,7 @@ axios.get('http://127.0.0.1:8000/wiki/data', {
         .x(x)
         .y(y)
         .scaleExtent([0, 500])
-        .on("zoom", zoom);
+        .on("zoomend", zoom);
 
     let svg = d3.select("#scatter")
         .append("svg")
@@ -90,9 +90,73 @@ axios.get('http://127.0.0.1:8000/wiki/data', {
 
     svg.call(tip);
 
-    svg.append("rect")
+    // Lasso functions to execute while lassoing
+    let lasso_start = function () {
+        lasso.items()
+            .attr("r", 3) // reset size
+            .style("fill", null) // clear all of the fills
+            .classed({"not_possible": true, "selected": false}); // style as not possible
+    };
+
+    let lasso_draw = function () {
+        // Style the possible dots
+        lasso.items().filter(function (d) {
+            return d.possible === true
+        }).classed({"not_possible": false, "possible": true});
+
+        // Style the not possible dot
+        lasso.items().filter(function (d) {
+            return d.possible === false
+        }).classed({"not_possible": true, "possible": false});
+    };
+
+    let lasso_end = function () {
+        // Reset the color of all dots
+        lasso.items()
+            .style("fill", function (d) {
+                return color(cValue(d));
+            });
+
+        // Style the selected dots
+        lasso.items().filter(function (d) {
+            return d.selected === true
+        }).classed({"not_possible": false, "possible": false})
+            .attr("r", 7)
+            .style("fill", function (d) {
+                return 'red';
+            });
+        ;
+
+        // Reset the style of the not selected dots
+        lasso.items().filter(function (d) {
+            return d.selected === false
+        }).classed({"not_possible": false, "possible": false})
+            .attr("r", 3.5)
+            .style("fill", function (d) {
+                return 'yellow';
+            });
+
+    };
+
+// Create the area where the lasso event can be triggered
+    let lasso_area = svg.append("rect")
         .attr("width", width)
-        .attr("height", height);
+        .attr("height", height)
+        .style("opacity", 0);
+
+// Define the lasso
+    let lasso = d3.lasso()
+        .closePathDistance(75) // max distance for the lasso loop to be closed
+        .closePathSelect(true) // can items be selected by closing the path?
+        // .hoverSelect(true) // can items by selected by hovering over them?
+        .area(lasso_area) // area where the lasso can be started
+        .on("start", lasso_start) // lasso start function
+        .on("draw", lasso_draw) // lasso draw function
+        .on("end", lasso_end); // lasso end function
+
+// Init the lasso on the svg:g that contains the dots
+    svg.call(lasso);
+
 
     svg.append("g")
         .classed("x axis", true)
@@ -116,32 +180,12 @@ axios.get('http://127.0.0.1:8000/wiki/data', {
         .style("text-anchor", "end")
         .text(yCat);
 
-    let objects = svg.append("svg")
-        .classed("objects", true)
-        .attr("width", width)
-        .attr("height", height);
 
-    objects.append("svg:line")
-        .classed("axisLine hAxisLine", true)
-        .attr("x1", 0)
-        .attr("y1", 0)
-        .attr("x2", width)
-        .attr("y2", 0)
-        .attr("transform", "translate(0," + height + ")");
-
-    objects.append("svg:line")
-        .classed("axisLine vAxisLine", true)
-        .attr("x1", 0)
-        .attr("y1", 0)
-        .attr("x2", 0)
-        .attr("y2", height);
-
-    objects.selectAll(".dot")
+    let circles = svg.selectAll(".dot")
         .data(data)
         .enter().append("circle")
         .classed("dot", true)
         .attr("r", function (d) {
-            // return 6 * Math.sqrt(d[rCat] / Math.PI);
             return 3.5;
         })
         .attr("transform", transform)
@@ -150,6 +194,8 @@ axios.get('http://127.0.0.1:8000/wiki/data', {
         })
         .on("mouseover", tip.show)
         .on("mouseout", tip.hide);
+
+    lasso.items(circles);
 
     let legend = svg.selectAll(".legend")
         .data(color.domain())

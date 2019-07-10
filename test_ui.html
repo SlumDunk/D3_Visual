@@ -704,6 +704,26 @@
                     .classed({"not_possible": false, "possible": false})
                     .attr("r", 3.5);
 
+                let selected_items = lasso.items().filter(function (d) {
+                    return d.selected === true
+                });
+                let selected_points = selected_items[0];
+                let user_ids = new Array();
+                selected_points.forEach(function (item) {
+                    console.log(item.attributes['user_id'].value);
+                    user_ids.push(item.attributes['user_id'].value);
+                })
+                console.log(user_ids);
+                axios.get('http://127.0.0.1:8000/wiki/params/range', {
+                    params: {
+                        user_ids: JSON.stringify(user_ids),
+                    }
+                }).then(function (response) {
+                    let data = response.data;
+                }).catch(function (error) {
+                    console.log(error);
+                });
+
             };
 
 
@@ -785,7 +805,9 @@
                 .attr("cy", function (d) {
                     return y(d.y);
                 })
-                // .attr("transform", transform)
+                .attr("user_id", function (d) {
+                    return d.user;
+                })
                 .style("fill", function (d) {
                     return color(cValue(d));
                 })
@@ -872,7 +894,7 @@
                     .attr("cy", function (d) {
                         return y(d.y);
                     })
-                    // .attr("transform", transform);
+                // .attr("transform", transform);
             }
 
             function transform(d) {

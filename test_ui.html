@@ -235,6 +235,8 @@
         return d.price;
     })]);
 
+    let offset = x2(10) - x2(5);
+
     let brush_1 = d3.svg.brush()
         .x(x2)
         .on("brushend", brushed_1);
@@ -475,9 +477,10 @@
 
     //set the default range
     d3.selectAll(".extent").attr('width', x2(10) - x2(0));
-    brush_1.extent([x2(0), x2(10)]);
-    brush_2.extent([x2(0), x2(10)]);
-    brush_3.extent([x2(0), x2(10)]);
+    d3.selectAll(".extent").attr('x', x2(0) + offset / 2);
+    brush_1.extent([x2(10), x2(0)]);
+    brush_2.extent([x2(10), x2(0)]);
+    brush_3.extent([x2(10), x2(0)]);
 
     /**render the left div end------------------------------------------------------------------------------------------------------**/
 
@@ -720,15 +723,37 @@
                     }
                 }).then(function (response) {
                     let data = response.data;
-                    time_start = data.time_param - 5;
+                    console.log(data);
+
+                    time_start = data.time_param >= 5 ? data.time_param - 5 : 0;
                     time_end = data.time_param + 5;
-                    good_start = data.good_edit_param - 5;
+                    good_start = data.good_edit_param >= 5 ? data.good_edit_param - 5 : 0;
                     good_end = data.good_edit_param + 5;
-                    bad_start = data.bad_edit_param - 5;
+                    bad_start = data.bad_edit_param >= 5 ? data.bad_edit_param - 5 : 0;
                     bad_end = data.bad_edit_param + 5;
 
+                    // time_start = 55;
+                    // time_end = 80;
+                    // good_start = 5;
+                    // good_end = 30;
+                    // bad_start = 10;
+                    // bad_end = 35;
+
+                    let extent_1 = d3.select(".brush_1")[0][0].childNodes[1];
+                    let extent_2 = d3.select(".brush_2")[0][0].childNodes[1];
+                    let extent_3 = d3.select(".brush_3")[0][0].childNodes[1];
+
+                    // console.log(x2(time_end) - x2(time_start))
+                    extent_1.setAttribute('x', x2(time_start) + offset / 2);
+                    extent_1.setAttribute('width', x2(time_end) - x2(time_start));
                     brush_1.extent([x2(time_start), x2(time_end)]);
+                    // console.log(x2(good_end) - x2(good_start))
+                    extent_2.setAttribute('x', x2(good_start) + offset / 2);
+                    extent_2.setAttribute('width', x2(good_end) - x2(good_start));
                     brush_2.extent([x2(good_start), x2(good_end)]);
+                    // console.log(x2(bad_end) - x2(bad_start))
+                    extent_3.setAttribute('x', x2(bad_start) + offset / 2);
+                    extent_3.setAttribute('width', x2(bad_end) - x2(bad_start));
                     brush_3.extent([x2(bad_start), x2(bad_end)]);
                 }).catch(function (error) {
                     console.log(error);

@@ -720,6 +720,16 @@
                     }
                 }).then(function (response) {
                     let data = response.data;
+                    time_start = data.time_param - 5;
+                    time_end = data.time_param + 5;
+                    good_start = data.good_edit_param - 5;
+                    good_end = data.good_edit_param + 5;
+                    bad_start = data.bad_edit_param - 5;
+                    bad_end = data.bad_edit_param + 5;
+
+                    brush_1.extent([x2(time_start), x2(time_end)]);
+                    brush_2.extent([x2(good_start), x2(good_end)]);
+                    brush_3.extent([x2(bad_start), x2(bad_end)]);
                 }).catch(function (error) {
                     console.log(error);
                 });

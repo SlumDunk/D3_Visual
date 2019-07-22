@@ -45,6 +45,10 @@
         stroke: #000;
     }
 
+    .point {
+        stroke: #000;
+    }
+
     .active .label:not(.inactive) {
         font-weight: bold;
         font-size: 9px;
@@ -148,7 +152,9 @@
 </style>
 <body>
 <div class="container">
-    <div id="left-div" style="width:33.3%;height:100%;float:left;"></div>
+    <div id="left-div" style="width:33.3%;height:100%;float:left;">
+        <input type="button" id='reset_parameter' style="opacity: 1;" value="reset" onclick="reset_parameter()">
+    </div>
     <div id="middle-div" style="width:33.3%;height:800px;float:left;">
         <div id='middle-top-div' style="width:100%;height:600px;float:left;"></div>
         <div id='middle-down-div' style="width:100%;height:100px;float:left;margin-top:50px;">
@@ -378,7 +384,7 @@
         .attr("width", width + margin.left + margin.right)
         .attr("height", height + margin.top + margin.bottom);
 
-    let context = svg.append("g")
+    let context = svg.append("g").attr('id', 'parameter_context')
         .attr("class", "context");
 
 
@@ -389,6 +395,7 @@
         .attr("class", "x axis")
         .attr("transform", "translate(0," + height2 + ")")
         .call(xAxis2);
+
 
     svg.append("text")
         .attr("transform",
@@ -412,6 +419,7 @@
         .attr("transform", "translate(0," + height2 * 2 + ")")
         .call(xAxis2);
 
+
     svg.append("text")
         .attr("transform",
             "translate(" + (width / 2) + " ," +
@@ -432,6 +440,7 @@
         .attr("class", "x axis")
         .attr("transform", "translate(0," + height2 * 3 + ")")
         .call(xAxis2);
+
 
     svg.append("text")
         .attr("transform",
@@ -610,6 +619,7 @@
     brush_1.extent([x2(10), x2(0)]);
     brush_2.extent([x2(10), x2(0)]);
     brush_3.extent([x2(10), x2(0)]);
+    render_points();
 
     /**render the left div end------------------------------------------------------------------------------------------------------**/
 
@@ -711,6 +721,27 @@
 
     /**render the center div end------------------------------------------------------------------------------------------------------**/
 
+    /**
+     * render the range of parameter
+     * */
+    function render_parameter_range(time_start, time_end, good_start, good_end, bad_start, bad_end) {
+        let extent_1 = d3.select(".brush_1")[0][0].childNodes[1];
+        let extent_2 = d3.select(".brush_2")[0][0].childNodes[1];
+        let extent_3 = d3.select(".brush_3")[0][0].childNodes[1];
+
+        // console.log(x2(time_end) - x2(time_start))
+        extent_1.setAttribute('x', x2(time_start) + offset / 2);
+        extent_1.setAttribute('width', x2(time_end) - x2(time_start));
+        brush_1.extent([x2(time_start), x2(time_end)]);
+        // console.log(x2(good_end) - x2(good_start))
+        extent_2.setAttribute('x', x2(good_start) + offset / 2);
+        extent_2.setAttribute('width', x2(good_end) - x2(good_start));
+        brush_2.extent([x2(good_start), x2(good_end)]);
+        // console.log(x2(bad_end) - x2(bad_start))
+        extent_3.setAttribute('x', x2(bad_start) + offset / 2);
+        extent_3.setAttribute('width', x2(bad_end) - x2(bad_start));
+        brush_3.extent([x2(bad_start), x2(bad_end)]);
+    }
 
     /**render the bottom div start------------------------------------------------------------------------------------------------------**/
     function render_scatter_plot(time_start, time_end, good_start, good_end, bad_start, bad_end) {
@@ -867,29 +898,7 @@
                     bad_start = data.bad_edit_param >= 5 ? data.bad_edit_param - 5 : 0;
                     bad_end = data.bad_edit_param + 5;
 
-                    // time_start = 55;
-                    // time_end = 80;
-                    // good_start = 5;
-                    // good_end = 30;
-                    // bad_start = 10;
-                    // bad_end = 35;
-
-                    let extent_1 = d3.select(".brush_1")[0][0].childNodes[1];
-                    let extent_2 = d3.select(".brush_2")[0][0].childNodes[1];
-                    let extent_3 = d3.select(".brush_3")[0][0].childNodes[1];
-
-                    // console.log(x2(time_end) - x2(time_start))
-                    extent_1.setAttribute('x', x2(time_start) + offset / 2);
-                    extent_1.setAttribute('width', x2(time_end) - x2(time_start));
-                    brush_1.extent([x2(time_start), x2(time_end)]);
-                    // console.log(x2(good_end) - x2(good_start))
-                    extent_2.setAttribute('x', x2(good_start) + offset / 2);
-                    extent_2.setAttribute('width', x2(good_end) - x2(good_start));
-                    brush_2.extent([x2(good_start), x2(good_end)]);
-                    // console.log(x2(bad_end) - x2(bad_start))
-                    extent_3.setAttribute('x', x2(bad_start) + offset / 2);
-                    extent_3.setAttribute('width', x2(bad_end) - x2(bad_start));
-                    brush_3.extent([x2(bad_start), x2(bad_end)]);
+                    render_parameter_range(time_start, time_end, good_start, good_end, bad_start, bad_end);
                 }).catch(function (error) {
                     console.log(error);
                 });
@@ -1175,23 +1184,131 @@
         filterLinks = null;
 
         //request data
-        axios.get('http://127.0.0.1:8000/wiki/model/result', {
+        axios.get('http://127.0.0.1:8000/wiki/params/', {
             params: {
-                time_start: time_start,
-                time_end: time_end,
-                good_start: good_start,
-                good_end: good_end,
-                bad_start: bad_start,
-                bad_end: bad_end
+                fp: fp,
+                tp: tp,
+                fn: fn,
+                tn: tn
             }
         }).then(function (response) {
-            console.log(response.data);
+            let result = response.data;
+            console.log(result.time);
+            if (result.time.length == 0) {
+                console.log('there is no combinations of parameter that can reach target result');
+            } else {
+                let len = result.time.length;
+                let time_range = result.time;
+                let good_range = result.good;
+                let bad_range = result.bad;
+
+                time_start = time_range[0] >= 5 ? time_range[0] - 5 : 0;
+                time_end = time_range[len - 1] + 5;
+                good_start = good_range[0] >= 5 ? good_range[0] - 5 : 0;
+                good_end = good_range[len - 1] + 5;
+                bad_start = bad_range[0] >= 5 ? bad_range[0] - 5 : 0;
+                bad_end = bad_range[len - 1] + 5;
+
+                render_parameter_range(time_start, time_end, good_start, good_end, bad_start, bad_end);
+
+                let time_points = new Array();
+                let good_points = new Array();
+                let bad_points = new Array();
+                for (let i = 0; i < len; i++) {
+                    time_points.push({'x': time_points[i], 'y': gap_y * 1.6});
+                    good_points.push({'x': good_points[i], 'y': gap_y * 1.6});
+                    bad_points.push({'x': bad_points[i], 'y': gap_y * 1.6});
+                }
+                render_points(time_points, good_points, bad_points);
+            }
+
 
         }).catch(function (error) {
             console.log(error);
         });
 
+    }
 
+    /**
+     * render points in parameter space
+     */
+    function render_points(time_points, good_points, bad_points) {
+
+        let context = d3.select("#parameter_context");
+
+        time_points = [{'x': 10, 'y': gap_y * 1.6}]
+
+        context.selectAll(".point")
+            .data(time_points)
+            .enter().append("circle")
+            .attr("id", function (d, i) {
+                return "dot_" + i;
+            })
+            .classed("point", true)
+            .attr("r", function (d) {
+                return 3.5;
+            })
+            .attr("cx", function (d) {
+                return x2(d.x) + offset / 2;
+            })
+            .attr("cy", function (d) {
+                return d.y;
+            })
+            .style("fill", function (d) {
+                return 'red';
+            });
+
+        good_points = [{'x': 10, 'y': gap_y * 1.6}]
+
+        context.selectAll(".point")
+            .data(good_points)
+            .enter().append("circle")
+            .attr("id", function (d, i) {
+                return "dot_" + i;
+            })
+            .classed("point", true)
+            .attr("r", function (d) {
+                return 3.5;
+            })
+            .attr("cx", function (d) {
+                return x2(d.x) + offset / 2;
+            })
+            .attr("cy", function (d) {
+                return d.y + height2;
+            })
+            .style("fill", function (d) {
+                return 'red';
+            });
+
+        bad_points = [{'x': 10, 'y': gap_y * 1.6}]
+
+        context.selectAll(".point")
+            .data(bad_points)
+            .enter().append("circle")
+            .attr("id", function (d, i) {
+                return "dot_" + i;
+            })
+            .classed("point", true)
+            .attr("r", function (d) {
+                return 3.5;
+            })
+            .attr("cx", function (d) {
+                return x2(d.x) + offset / 2;
+            })
+            .attr("cy", function (d) {
+                return d.y + height2 * 2;
+            })
+            .style("fill", function (d) {
+                return 'red';
+            });
+    }
+
+    /**
+     * listener on reset button in parameter space
+     */
+    function reset_parameter() {
+        // alert('fuck');
+        $('.point').remove();
     }
 
     $(document).ready(function () {

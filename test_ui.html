@@ -344,7 +344,7 @@
 
     let data = [];
     //construct parameters
-    for (let i = 0; i < 20; i++) {
+    for (let i = 0; i <= 20; i++) {
         let item = {};
         item.date = 5 * i;
         item.price = Math.floor(Math.random() * 600);
@@ -577,7 +577,7 @@
                     prev_json.links.push({
                         'source': node_map.get(element.source),
                         'target': node_map.get(element.target),
-                        'value': 1
+                        'value': 100
                     });
                     count++;
                 }
@@ -619,7 +619,6 @@
     brush_1.extent([x2(10), x2(0)]);
     brush_2.extent([x2(10), x2(0)]);
     brush_3.extent([x2(10), x2(0)]);
-    render_points();
 
     /**render the left div end------------------------------------------------------------------------------------------------------**/
 
@@ -892,11 +891,11 @@
                     console.log(data);
 
                     time_start = data.time_param >= 5 ? data.time_param - 5 : 0;
-                    time_end = data.time_param + 5;
+                    time_end = data.time_param >= 100 ? data.time_param : data.time_param + 5;
                     good_start = data.good_edit_param >= 5 ? data.good_edit_param - 5 : 0;
-                    good_end = data.good_edit_param + 5;
+                    good_end = data.good_edit_param >= 100 ? data.good_edit_param : data.good_edit_param + 5;
                     bad_start = data.bad_edit_param >= 5 ? data.bad_edit_param - 5 : 0;
-                    bad_end = data.bad_edit_param + 5;
+                    bad_end = data.bad_edit_param >= 100 ? data.bad_edit_param : data.bad_edit_param + 5;
 
                     render_parameter_range(time_start, time_end, good_start, good_end, bad_start, bad_end);
                 }).catch(function (error) {
@@ -995,7 +994,7 @@
                     let y = d3.event.pageY;
                     axios.get('http://127.0.0.1:8000/wiki/user', {
                         params: {
-                            row_id: 5,
+                            row_id: d.user,
                         }
                     }).then(function (response) {
                         let user = response.data;
@@ -1156,7 +1155,7 @@
                 prev_json.links.push({
                     'source': node_map.get(element.source),
                     'target': node_map.get(element.target),
-                    'value': 1
+                    'value': 100
                 });
                 count++;
             }
@@ -1203,11 +1202,11 @@
                 let bad_range = result.bad;
 
                 time_start = time_range[0] >= 5 ? time_range[0] - 5 : 0;
-                time_end = time_range[len - 1] + 5;
+                time_end = time_range[len - 1] >= 100 ? time_range[len - 1] : time_range[len - 1] + 5;
                 good_start = good_range[0] >= 5 ? good_range[0] - 5 : 0;
-                good_end = good_range[len - 1] + 5;
+                good_end = good_range[len - 1] >= 100 ? good_range[len - 1] : good_range[len - 1] + 5;
                 bad_start = bad_range[0] >= 5 ? bad_range[0] - 5 : 0;
-                bad_end = bad_range[len - 1] + 5;
+                bad_end = bad_range[len - 1] >= 100 ? bad_range[len - 1] : bad_range[len - 1] + 5;
 
                 render_parameter_range(time_start, time_end, good_start, good_end, bad_start, bad_end);
 

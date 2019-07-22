@@ -732,10 +732,14 @@
 
 
         let cValue = function (d) {
-            if (d.classification == 'N') {
-                return 'Vandal';
+            if (d.classification == 'TN') {
+                return 'True Vandal';
+            } else if (d.classification == 'FN') {
+                return 'False Vandal';
+            } else if (d.classification == 'TP') {
+                return 'True Positive';
             } else {
-                return 'Benign';
+                return 'False Positive';
             }
         };
 

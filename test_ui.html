@@ -49,6 +49,14 @@
         stroke: #000;
     }
 
+    .point_2 {
+        stroke: #000;
+    }
+
+    .point_3 {
+        stroke: #000;
+    }
+
     .active .label:not(.inactive) {
         font-weight: bold;
         font-size: 9px;
@@ -619,7 +627,6 @@
     brush_1.extent([x2(10), x2(0)]);
     brush_2.extent([x2(10), x2(0)]);
     brush_3.extent([x2(10), x2(0)]);
-
     /**render the left div end------------------------------------------------------------------------------------------------------**/
 
     /**
@@ -852,6 +859,7 @@
             };
 
             let lasso_end = function () {
+                reset_parameter();
                 // Reset the color of all dots
                 lasso.items()
                     .style("fill", function (d) {
@@ -1111,6 +1119,7 @@
      * function that is registered to listen to select event
      */
     function on_change() {
+        reset_parameter();
         let tp = $('#tp_select option:selected').val();
         let tp_node = 'TP_' + tp;
         let tn = $('#tn_select option:selected').val();
@@ -1214,9 +1223,9 @@
                 let good_points = new Array();
                 let bad_points = new Array();
                 for (let i = 0; i < len; i++) {
-                    time_points.push({'x': time_points[i], 'y': gap_y * 1.6});
-                    good_points.push({'x': good_points[i], 'y': gap_y * 1.6});
-                    bad_points.push({'x': bad_points[i], 'y': gap_y * 1.6});
+                    time_points.push({'x': time_range[i], 'y': gap_y * 1.6});
+                    good_points.push({'x': good_range[i], 'y': gap_y * 1.6});
+                    bad_points.push({'x': bad_range[i], 'y': gap_y * 1.6});
                 }
                 render_points(time_points, good_points, bad_points);
             }
@@ -1235,14 +1244,11 @@
 
         let context = d3.select("#parameter_context");
 
-        time_points = [{'x': 10, 'y': gap_y * 1.6}]
+        // time_points = [{'x': 10, 'y': gap_y * 1.6}]
 
         context.selectAll(".point")
             .data(time_points)
             .enter().append("circle")
-            .attr("id", function (d, i) {
-                return "dot_" + i;
-            })
             .classed("point", true)
             .attr("r", function (d) {
                 return 3.5;
@@ -1257,14 +1263,11 @@
                 return 'red';
             });
 
-        good_points = [{'x': 10, 'y': gap_y * 1.6}]
+        // good_points = [{'x': 10, 'y': gap_y * 1.6}]
 
-        context.selectAll(".point")
+        context.selectAll(".point_2")
             .data(good_points)
             .enter().append("circle")
-            .attr("id", function (d, i) {
-                return "dot_" + i;
-            })
             .classed("point", true)
             .attr("r", function (d) {
                 return 3.5;
@@ -1279,14 +1282,11 @@
                 return 'red';
             });
 
-        bad_points = [{'x': 10, 'y': gap_y * 1.6}]
+        // bad_points = [{'x': 10, 'y': gap_y * 1.6}]
 
-        context.selectAll(".point")
+        context.selectAll(".point_3")
             .data(bad_points)
             .enter().append("circle")
-            .attr("id", function (d, i) {
-                return "dot_" + i;
-            })
             .classed("point", true)
             .attr("r", function (d) {
                 return 3.5;
@@ -1295,6 +1295,7 @@
                 return x2(d.x) + offset / 2;
             })
             .attr("cy", function (d) {
+                console.log(d.y);
                 return d.y + height2 * 2;
             })
             .style("fill", function (d) {

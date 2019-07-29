@@ -45,6 +45,10 @@
         stroke: #000;
     }
 
+    .dot_t {
+        stroke: #000;
+    }
+
     .point {
         stroke: #000;
     }
@@ -161,7 +165,12 @@
 <body>
 <div class="container">
     <div id="left-div" style="width:33.3%;height:100%;float:left;">
+        <div id="left-div-2" style="float:left">
+            <input type="button" id='reset_parameter_2' style="opacity: 1;" value="reset">
+        </div>
         <input type="button" id='reset_parameter' style="opacity: 1;" value="reset" onclick="reset_parameter()">
+        <div id="left-div-1" style="float:left;padding-left: 50px;">
+        </div>
     </div>
     <div id="middle-div" style="width:33.3%;height:800px;float:left;">
         <div id='middle-top-div' style="width:100%;height:600px;float:left;"></div>
@@ -300,7 +309,10 @@
         outerWidth = 600,
         outerHeight = 600,
         width = outerWidth - margin.left - margin.right,
-        height = outerHeight - margin.top - margin.bottom;
+        height = outerHeight - margin.top - margin.bottom,
+        outerHeight_1 = 350,
+        width_1 = outerWidth - margin.left - margin.right,
+        height_1 = outerHeight_1 - margin.top - margin.bottom;
 
     let colors = {
         'TP': 'orange',
@@ -359,8 +371,8 @@
         data.push(item);
     }
 
-    let margin2 = {top: 450, right: 10, bottom: 20, left: 40},
-        height2 = 600 - margin2.top - margin2.bottom;
+    let margin2 = {top: 150, right: 10, bottom: 20, left: 40},
+        height2 = 250 - margin2.top - margin2.bottom;
 
     let x2 = d3.scale.ordinal().rangeBands([0, width], .1),
         y2 = d3.scale.linear().range([height2, 0]);
@@ -388,15 +400,15 @@
         .x(x2)
         .on("brushend", brushed_3);
 
-    let svg = d3.select("#left-div").append("svg")
-        .attr("width", width + margin.left + margin.right)
-        .attr("height", height + margin.top + margin.bottom);
+    let svg = d3.select("#left-div-1").append("svg")
+        .attr("width", width_1 + margin.left + margin.right)
+        .attr("height", height_1 + margin.top + margin.bottom);
 
     let context = svg.append("g").attr('id', 'parameter_context')
         .attr("class", "context");
 
 
-    let gap_y = 60, gap = 59;
+    let gap_y = 40, gap = 39;
 
     //time parameter
     context.append("g")
@@ -416,7 +428,6 @@
     context.append("g")
         .attr("class", "x brush_1")
         .call(brush_1)
-        // .call(brush_1.extent,[0,60])
         .selectAll("rect")
         .attr("y", gap_y)
         .attr("height", height2 - gap);
@@ -489,57 +500,9 @@
     }
 
     /**
-     * 刷子滑动结束后的动作
+     * query link according to the combinations of parameters
      * */
-    function brush_end(flag) {
-        let brush;
-        if (flag == 1) {
-            brush = brush_1;
-        }
-
-        if (flag == 2) {
-            brush = brush_2;
-        }
-
-        if (flag == 3) {
-            brush = brush_3;
-        }
-
-        let selected;
-        selected = x2.domain()
-            .filter(function (d) {
-                // console.log(d);
-                return (brush.extent()[0] <= x2(d)) && (x2(d) <= brush.extent()[1]);
-            });
-
-        let start;
-        let end;
-
-        if (brush.extent()[0] != brush.extent()[1]) {//adjust the range
-            start = selected[0] - (x2(selected[0]) >= brush.extent()[0] ? 5 : 0);
-            end = selected[selected.length - 1] + (x2(selected[selected.length - 1]) >= brush.extent()[1] ? 0 : 5);
-        } else {
-            start = 0;
-            end = data.length;
-        }
-        // console.log(start + "#" + end);
-
-        if (flag == 1) {
-            time_start = start;
-            time_end = end;
-        }
-
-        if (flag == 2) {
-            good_start = start;
-            good_end = end;
-        }
-
-        if (flag == 3) {
-            bad_start = start;
-            bad_end = end;
-        }
-
-        //request data
+    function query_link() {
         axios.get('http://127.0.0.1:8000/wiki/model/result', {
             params: {
                 time_start: time_start,
@@ -618,6 +581,61 @@
         }).catch(function (error) {
             console.log(error);
         });
+    };
+
+    /**
+     * 刷子滑动结束后的动作
+     * */
+    function brush_end(flag) {
+        let brush;
+        if (flag == 1) {
+            brush = brush_1;
+        }
+
+        if (flag == 2) {
+            brush = brush_2;
+        }
+
+        if (flag == 3) {
+            brush = brush_3;
+        }
+
+        let selected;
+        selected = x2.domain()
+            .filter(function (d) {
+                // console.log(d);
+                return (brush.extent()[0] <= x2(d)) && (x2(d) <= brush.extent()[1]);
+            });
+
+        let start;
+        let end;
+
+        if (brush.extent()[0] != brush.extent()[1]) {//adjust the range
+            start = selected[0] - (x2(selected[0]) >= brush.extent()[0] ? 5 : 0);
+            end = selected[selected.length - 1] + (x2(selected[selected.length - 1]) >= brush.extent()[1] ? 0 : 5);
+        } else {
+            start = 0;
+            end = data.length;
+        }
+        // console.log(start + "#" + end);
+
+        if (flag == 1) {
+            time_start = start;
+            time_end = end;
+        }
+
+        if (flag == 2) {
+            good_start = start;
+            good_end = end;
+        }
+
+        if (flag == 3) {
+            bad_start = start;
+            bad_end = end;
+        }
+
+        //request data
+        query_link();
 
     }
 
@@ -627,6 +645,351 @@
     brush_1.extent([x2(10), x2(0)]);
     brush_2.extent([x2(10), x2(0)]);
     brush_3.extent([x2(10), x2(0)]);
+
+    create_parameter_scatter_plot();
+
+    /**
+     * create scatter plot for parameter space
+     * */
+    function create_parameter_scatter_plot() {
+        let old_svg = d3.select("#param-scatter-plot");
+        if (old_svg != undefined) {
+            old_svg.remove();
+        }
+
+        // d3.select("#reset_parameter_2").style('opacity', 0)
+
+        let x = d3.scale.linear()
+            .range([0, width_1]).nice();
+
+        let y = d3.scale.linear()
+            .range([height_1, 0]).nice();
+
+        let xCat = "x",
+            yCat = "y";
+
+
+        let cValue = function (d) {
+            if (d.classification == 'P') {
+                return 'Position';
+            } else if (d.classification == 'FN') {
+                return 'False Vandal';
+            } else if (d.classification == 'TP') {
+                return 'True Positive';
+            } else {
+                return 'False Positive';
+            }
+        };
+
+        axios.get('http://127.0.0.1:8000/wiki/param/position', {
+            params: {
+            }
+        }).then(function (response) {
+            let data = response.data;
+
+            let xMax = d3.max(data, function (d) {
+                    return d[xCat];
+                }) * 1.05,
+                xMin = d3.min(data, function (d) {
+                    return d[xCat];
+                }),
+                yMax = d3.max(data, function (d) {
+                    return d[yCat];
+                }) * 1.05,
+                yMin = d3.min(data, function (d) {
+                    return d[yCat];
+                });
+
+            xMin = xMin > 0 ? 0 : xMin;
+            yMin = yMin > 0 ? 0 : yMin;
+
+            x.domain([xMin, xMax]);
+            y.domain([yMin, yMax]);
+
+            let xAxis = d3.svg.axis()
+                .scale(x)
+                .orient("bottom")
+                .tickSize(-height_1);
+
+            let yAxis = d3.svg.axis()
+                .scale(y)
+                .orient("left")
+                .tickSize(-width_1);
+
+            let color = d3.scale.category10();
+
+            let zoomBeh = d3.behavior.zoom()
+                .x(x)
+                .y(y)
+                .scaleExtent([0, 500])
+                .on("zoomend", zoom);
+
+            let svg = d3.select("#left-div-2").append("svg").attr("id", "param-scatter-plot")
+                .attr("width", outerWidth)
+                .attr("height", outerHeight_1)
+                .append("g")
+                .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+
+            // Lasso functions to execute while lassoing
+            let lasso_start = function () {
+                lasso.items()
+                    .attr("r", 3.5) // reset size
+                    .style("fill", null) // clear all of the fills
+                    .classed({"not_possible": true, "selected": false}); // style as not possible
+            };
+
+            let lasso_draw = function () {
+                // Style the possible dots
+                lasso.items().filter(function (d) {
+                    return d.possible === true
+                })
+                    .classed({"not_possible": false, "possible": true});
+
+                // Style the not possible dot
+                lasso.items().filter(function (d) {
+                    return d.possible === false
+                })
+                    .classed({"not_possible": true, "possible": false});
+            };
+
+            let lasso_end = function () {
+                reset_parameter();
+                // Reset the color of all dots
+                lasso.items()
+                    .style("fill", function (d) {
+                        return color(cValue(d));
+                    });
+
+                // Style the selected dots
+                lasso.items().filter(function (d) {
+                    return d.selected === true
+                })
+                    .classed({"not_possible": false, "possible": false})
+                    .attr("r", 7);
+
+                // Reset the style of the not selected dots
+                lasso.items().filter(function (d) {
+                    return d.selected === false
+                })
+                    .classed({"not_possible": false, "possible": false})
+                    .attr("r", 3.5);
+
+                let selected_items = lasso.items().filter(function (d) {
+                    return d.selected === true
+                });
+                let selected_points = selected_items[0];
+                let ids = new Array();
+                selected_points.forEach(function (item) {
+                    console.log(item.attributes['user_id'].value);
+                    ids.push(item.attributes['user_id'].value);
+                })
+                console.log(ids);
+                axios.get('http://127.0.0.1:8000/wiki/param/ids', {
+                    params: {
+                        ids: JSON.stringify(ids),
+                    }
+                }).then(function (response) {
+                    let result = response.data;
+                    console.log(result);
+                    if (result.time.length == 0) {
+                        console.log('there is no combinations of parameter that can reach target result');
+                    } else {
+                        let len = result.time.length;
+                        let time_range = result.time;
+                        let good_range = result.good;
+                        let bad_range = result.bad;
+
+                        time_start = time_range[0] >= 5 ? time_range[0] - 5 : 0;
+                        time_end = time_range[len - 1] >= 100 ? time_range[len - 1] : time_range[len - 1] + 5;
+                        good_start = good_range[0] >= 5 ? good_range[0] - 5 : 0;
+                        good_end = good_range[len - 1] >= 100 ? good_range[len - 1] : good_range[len - 1] + 5;
+                        bad_start = bad_range[0] >= 5 ? bad_range[0] - 5 : 0;
+                        bad_end = bad_range[len - 1] >= 100 ? bad_range[len - 1] : bad_range[len - 1] + 5;
+
+                        render_parameter_range(time_start, time_end, good_start, good_end, bad_start, bad_end);
+
+                        let time_points = new Array();
+                        let good_points = new Array();
+                        let bad_points = new Array();
+                        for (let i = 0; i < len; i++) {
+                            time_points.push({'x': time_range[i], 'y': gap_y * 1.6});
+                            good_points.push({'x': good_range[i], 'y': gap_y * 1.6});
+                            bad_points.push({'x': bad_range[i], 'y': gap_y * 1.6});
+                        }
+                        render_points(time_points, good_points, bad_points);
+                        query_link();
+                    }
+                }).catch(function (error) {
+                    console.log(error);
+                });
+
+            };
+
+
+            // Create the area where the lasso event can be triggered
+            let lasso_area = svg.append("rect")
+                .attr("width", width_1)
+                .attr("height", height_1)
+                .style("opacity", 0);
+
+            // Define the lasso
+            let lasso = d3.lasso()
+                .closePathDistance(75) // max distance for the lasso loop to be closed
+                .closePathSelect(true) // can items be selected by closing the path?
+                .hoverSelect(true) // can items by selected by hovering over them?
+                .area(lasso_area) // area where the lasso can be started
+                .on("start", lasso_start) // lasso start function
+                .on("draw", lasso_draw) // lasso draw function
+                .on("end", lasso_end); // lasso end function
+
+            // Init the lasso on the svg:g that contains the dots
+            svg.call(lasso);
+            svg.call(zoomBeh);
+
+            svg.append("g")
+                .classed("x axis", true)
+                .attr("transform", "translate(0," + height_1 + ")")
+                .call(xAxis)
+                .append("text")
+                .classed("label", true)
+                .attr("x", width_1)
+                .attr("y", margin.bottom - 10)
+                .style("text-anchor", "end")
+                .text(xCat);
+
+            svg.append("g")
+                .classed("y axis", true)
+                .call(yAxis)
+                .append("text")
+                .classed("label", true)
+                .attr("transform", "rotate(-90)")
+                .attr("y", -margin.left)
+                .attr("dy", ".71em")
+                .style("text-anchor", "end")
+                .text(yCat);
+
+            let objects = svg.append("svg")
+                .classed("objects", true)
+                .attr("width", width_1)
+                .attr("height", height_1);
+
+            objects.append("svg:line")
+                .classed("axisLine hAxisLine", true)
+                .attr("x1", 0)
+                .attr("y1", 0)
+                .attr("x2", width_1)
+                .attr("y2", 0)
+                .attr("transform", "translate(0," + height_1 + ")");
+
+            objects.append("svg:line")
+                .classed("axisLine vAxisLine", true)
+                .attr("x1", 0)
+                .attr("y1", 0)
+                .attr("x2", 0)
+                .attr("y2", height_1);
+
+            objects.selectAll(".dot_t")
+                .data(data)
+                .enter().append("circle")
+                .attr("id", function (d, i) {
+                    return "dot_" + i;
+                })
+                .classed("dot_t", true)
+                .attr("r", function (d) {
+                    return 3.5;
+                })
+                .attr("cx", function (d) {
+                    return x(d.x);
+                })
+                .attr("cy", function (d) {
+                    return y(d.y);
+                })
+                .attr("user_id", function (d) {
+                    return d.user;
+                })
+                .style("fill", function (d) {
+                    return color(cValue(d));
+                })
+                .on("mouseover", function (d) {
+                    let x = d3.event.pageX;
+                    let y = d3.event.pageY;
+                    axios.get('http://127.0.0.1:8000/wiki/param', {
+                        params: {
+                            row_id: d.user,
+                        }
+                    }).then(function (response) {
+                        let data = response.data;
+                        tooltip.transition()
+                            .duration(200)
+                            .style("opacity", .9);
+                        tooltip.html('time:' + data.time_param + "<br />" + 'good_edit:' + data.good_edit_param + "<br />"
+                            + 'bad_edit:' + data.bad_edit_param)
+                            .style("left", (x + 5) + "px")
+                            .style("top", (y - 28) + "px");
+                    });
+                })
+                .on("mouseout", function (d) {
+                    tooltip.transition()
+                        .duration(500)
+                        .style("opacity", 0);
+                });
+
+            lasso.items(d3.selectAll(".dot_t"));
+
+            d3.select("#reset_parameter_2").style('opacity', 1).on("click", change);
+
+            function change() {
+                xCat = "x";
+                xMax = d3.max(data, function (d) {
+                    return d[xCat];
+                });
+                xMin = d3.min(data, function (d) {
+                    return d[xCat];
+                });
+
+                zoomBeh.x(x.domain([xMin, xMax])).y(y.domain([yMin, yMax]));
+
+                let svg = d3.select("#scatter").transition();
+
+                svg.select(".x.axis").duration(750).call(xAxis).select(".label").text(xCat);
+
+                objects.selectAll(".dot_t").transition().duration(1000)
+                    .attr("cx", function (d) {
+                        return x(d.x);
+                    })
+                    .attr("cy", function (d) {
+                        return y(d.y);
+                    });
+                // attr("transform", transform);
+            }
+
+            function zoom() {
+                svg.select(".x.axis").call(xAxis);
+                svg.select(".y.axis").call(yAxis);
+
+                svg.selectAll(".dot_t")
+                    .attr("cx", function (d) {
+                        return x(d.x);
+                    })
+                    .attr("cy", function (d) {
+                        return y(d.y);
+                    })
+                // .attr("transform", transform);
+            }
+
+            function transform(d) {
+                // console.log(d);
+                let x_pos = x(d[xCat]);
+                let y_pos = y(d[yCat]);
+                return "translate(" + x_pos + "," + y_pos + ")";
+            }
+
+        }).catch(function (error) {
+            console.log(error);
+        });
+
+    }
     /**render the left div end------------------------------------------------------------------------------------------------------**/
 
     /**
@@ -1055,6 +1418,8 @@
 
                 zoomBeh.x(x.domain([xMin, xMax])).y(y.domain([yMin, yMax]));
 
+                let d=d3.select("#scatter");
+
                 let svg = d3.select("#scatter").transition();
 
                 svg.select(".x.axis").duration(750).call(xAxis).select(".label").text(xCat);
@@ -1307,7 +1672,6 @@
      * listener on reset button in parameter space
      */
     function reset_parameter() {
-        // alert('fuck');
         $('.point').remove();
     }
 

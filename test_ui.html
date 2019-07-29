@@ -45,7 +45,7 @@
         stroke: #000;
     }
 
-    .dot_t {
+    .param_dot {
         stroke: #000;
     }
 
@@ -159,6 +159,12 @@
 
     .possible {
         fill: #EC888C;
+    }
+
+    .hexagon {
+        fill: none;
+        stroke: #000;
+        stroke-width: .5px;
     }
 
 </style>
@@ -295,8 +301,9 @@
 <script src="./js/d3.chart.min.js"></script>
 <script src="./js/d3.chart.sankey.min.js"></script>
 <script src="http://labratrevenge.com/d3-tip/javascripts/d3.tip.v0.6.3.js"></script>
-<script src="http://axc.net/code_libraries/lasso/lasso.min.js"></script>
+<script src="./js/lasso.min.js"></script>
 <script src="./js/jquery-1.12.4.js"></script>
+<script src="http://d3js.org/d3.hexbin.v0.min.js"></script>
 <script>
     //define the tooltip to show the detail information
     let tooltip = d3.select("body")
@@ -682,8 +689,7 @@
         };
 
         axios.get('http://127.0.0.1:8000/wiki/param/position', {
-            params: {
-            }
+            params: {}
         }).then(function (response) {
             let data = response.data;
 
@@ -733,7 +739,7 @@
 
             // Lasso functions to execute while lassoing
             let lasso_start = function () {
-                lasso.items()
+                lasso_left.items()
                     .attr("r", 3.5) // reset size
                     .style("fill", null) // clear all of the fills
                     .classed({"not_possible": true, "selected": false}); // style as not possible
@@ -741,13 +747,13 @@
 
             let lasso_draw = function () {
                 // Style the possible dots
-                lasso.items().filter(function (d) {
+                lasso_left.items().filter(function (d) {
                     return d.possible === true
                 })
                     .classed({"not_possible": false, "possible": true});
 
                 // Style the not possible dot
-                lasso.items().filter(function (d) {
+                lasso_left.items().filter(function (d) {
                     return d.possible === false
                 })
                     .classed({"not_possible": true, "possible": false});
@@ -756,26 +762,26 @@
             let lasso_end = function () {
                 reset_parameter();
                 // Reset the color of all dots
-                lasso.items()
+                lasso_left.items()
                     .style("fill", function (d) {
                         return color(cValue(d));
                     });
 
                 // Style the selected dots
-                lasso.items().filter(function (d) {
+                lasso_left.items().filter(function (d) {
                     return d.selected === true
                 })
                     .classed({"not_possible": false, "possible": false})
                     .attr("r", 7);
 
                 // Reset the style of the not selected dots
-                lasso.items().filter(function (d) {
+                lasso_left.items().filter(function (d) {
                     return d.selected === false
                 })
                     .classed({"not_possible": false, "possible": false})
                     .attr("r", 3.5);
 
-                let selected_items = lasso.items().filter(function (d) {
+                let selected_items = lasso_left.items().filter(function (d) {
                     return d.selected === true
                 });
                 let selected_points = selected_items[0];
@@ -828,23 +834,23 @@
 
 
             // Create the area where the lasso event can be triggered
-            let lasso_area = svg.append("rect")
+            let lasso_area_left = svg.append("rect")
                 .attr("width", width_1)
                 .attr("height", height_1)
                 .style("opacity", 0);
 
             // Define the lasso
-            let lasso = d3.lasso()
+            let lasso_left = d3.lasso()
                 .closePathDistance(75) // max distance for the lasso loop to be closed
                 .closePathSelect(true) // can items be selected by closing the path?
                 .hoverSelect(true) // can items by selected by hovering over them?
-                .area(lasso_area) // area where the lasso can be started
+                .area(lasso_area_left) // area where the lasso can be started
                 .on("start", lasso_start) // lasso start function
                 .on("draw", lasso_draw) // lasso draw function
                 .on("end", lasso_end); // lasso end function
 
             // Init the lasso on the svg:g that contains the dots
-            svg.call(lasso);
+            svg.call(lasso_left);
             svg.call(zoomBeh);
 
             svg.append("g")
@@ -889,13 +895,13 @@
                 .attr("x2", 0)
                 .attr("y2", height_1);
 
-            objects.selectAll(".dot_t")
+            objects.selectAll(".param_dot")
                 .data(data)
                 .enter().append("circle")
                 .attr("id", function (d, i) {
-                    return "dot_" + i;
+                    return "param_dot_" + i;
                 })
-                .classed("dot_t", true)
+                .classed("param_dot", true)
                 .attr("r", function (d) {
                     return 3.5;
                 })
@@ -935,7 +941,7 @@
                         .style("opacity", 0);
                 });
 
-            lasso.items(d3.selectAll(".dot_t"));
+            lasso_left.items(d3.selectAll(".param_dot"));
 
             d3.select("#reset_parameter_2").style('opacity', 1).on("click", change);
 
@@ -954,7 +960,7 @@
 
                 svg.select(".x.axis").duration(750).call(xAxis).select(".label").text(xCat);
 
-                objects.selectAll(".dot_t").transition().duration(1000)
+                objects.selectAll(".param_dot").transition().duration(1000)
                     .attr("cx", function (d) {
                         return x(d.x);
                     })
@@ -968,7 +974,7 @@
                 svg.select(".x.axis").call(xAxis);
                 svg.select(".y.axis").call(yAxis);
 
-                svg.selectAll(".dot_t")
+                svg.selectAll(".param_dot")
                     .attr("cx", function (d) {
                         return x(d.x);
                     })
@@ -990,6 +996,7 @@
         });
 
     }
+
     /**render the left div end------------------------------------------------------------------------------------------------------**/
 
     /**
@@ -1198,6 +1205,37 @@
                 .append("g")
                 .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
+            let points = new Array();
+            data.forEach(function (d) {
+                    points.push([x(d.x), y(d.y)]);
+                }
+            );
+
+            let hex_bin_r = 15, hex_bin_d = 14.5;
+            let color_hex = d3.scale.linear()
+                .domain([0, 10])
+                .range(["white", "steelblue"])
+                .interpolate(d3.interpolateLab);
+
+            let hexbin = d3.hexbin()
+                .size([400, 400])
+                .radius(hex_bin_r);
+
+            let hexagon = svg.append("g")
+                .attr("class", "hexagons")
+                .attr('width', width)
+                .attr('height', height)
+                .style('z-index', -1)
+                .selectAll("path")
+                .data(hexbin(points))
+                .enter().append("path")
+                .attr("d", hexbin.hexagon(hex_bin_d))
+                .attr("transform", function (d) {
+                    return "translate(" + d.x + "," + d.y + ")";
+                })
+                .style("fill", function (d) {
+                    return color_hex(d.length);
+                });
 
             // Lasso functions to execute while lassoing
             let lasso_start = function () {
@@ -1295,6 +1333,7 @@
             // Init the lasso on the svg:g that contains the dots
             svg.call(lasso);
             svg.call(zoomBeh);
+
 
             svg.append("g")
                 .classed("x axis", true)
@@ -1418,7 +1457,7 @@
 
                 zoomBeh.x(x.domain([xMin, xMax])).y(y.domain([yMin, yMax]));
 
-                let d=d3.select("#scatter");
+                let d = d3.select("#scatter");
 
                 let svg = d3.select("#scatter").transition();
 
@@ -1432,6 +1471,7 @@
                         return y(d.y);
                     });
                 // attr("transform", transform);
+                d3.select('.hexagons').style("opacity", 1);
             }
 
             function zoom() {
@@ -1446,6 +1486,7 @@
                         return y(d.y);
                     })
                 // .attr("transform", transform);
+                d3.select('.hexagons').style("opacity", 0);
             }
 
             function transform(d) {

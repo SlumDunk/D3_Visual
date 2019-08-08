@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <meta charset="utf-8">
-<title>Parallel Coordinates Ordinal Axis</title>
+<title>Visualization Dashboard</title>
 <link rel="stylesheet" href="scatter.css" charset="utf-8">
 <style>
     svg {
@@ -89,7 +89,7 @@
 
     .container {
         position: relative;
-        width: 1800px;
+        width: 1900px;
         height: 600px;
     }
 
@@ -167,18 +167,23 @@
         stroke-width: .5px;
     }
 
+    .hexbin {
+
+    }
 </style>
 <body>
 <div class="container">
-    <div id="left-div" style="width:33.3%;height:100%;float:left;">
+    <div id="left-div" style="width:31%;height:100%;float:left;">
         <div id="left-div-2" style="float:left">
+            <div style="text-align: center;font-size: 22px; font-family: Arial;"> parameter space</div>
             <input type="button" id='reset_parameter_2' style="opacity: 1;" value="reset">
         </div>
         <input type="button" id='reset_parameter' style="opacity: 1;" value="reset" onclick="reset_parameter()">
         <div id="left-div-1" style="float:left;padding-left: 50px;">
         </div>
     </div>
-    <div id="middle-div" style="width:33.3%;height:800px;float:left;">
+    <div id="middle-div" style="width:31%;height:800px;float:left;">
+        <div style="text-align: center;font-size: 22px; font-family: Arial;"> result space</div>
         <div id='middle-top-div' style="width:100%;height:600px;float:left;"></div>
         <div id='middle-down-div' style="width:100%;height:100px;float:left;margin-top:50px;">
             <div style="width: 25%; float: left;">
@@ -289,9 +294,31 @@
             </div>
         </div>
     </div>
-
-    <div id="bottom-div" style="width:33.3%;height:100%;float:left;">
-        <input type="button" id='reset' style="opacity: 0;" value="reset">
+    <div id="bottom-div" style="width:38%;height:100%;float:left;">
+        <div style="text-align: center;font-size: 22px; font-family: Arial;opacity: 0;" id="as-title"> attribute space
+        </div>
+        <div id="bottom-div-left" style="float: left;width:90%;"></div>
+        <div id="bottom-div-right" style="display: none;width: 10%;float: right;text-align: center">
+            <input type="button" id='reset' style="opacity: 0;" value="reset">
+            <div>
+                <input type="checkbox" id="tp_checkbox" onclick="filter_uers()" value="TP" checked="checked"/>
+            </div>
+            <div>
+                <input type="checkbox" id="tn_checkbox" onclick="filter_uers()" value="TN" checked="checked"/>
+            </div>
+            <div>
+                <input type="checkbox" id="fn_checkbox" onclick="filter_uers()" value="FN" checked="checked"/>
+            </div>
+            <div>
+                <input type="checkbox" id="fp_checkbox" onclick="filter_uers()" value="FP" checked="checked"/>
+            </div>
+            <div style="margin-top: 40px;">
+                <select id="index_select" onchange="bg_change()">
+                    <option value="majority" selected="selected">majority</option>
+                    <option value="density">density</option>
+                </select>
+            </div>
+        </div>
     </div>
 </div>
 </body>
@@ -342,6 +369,7 @@
     let count = 0;
 
     let node_map = d3.map();
+    let parameter_position_map = d3.map();
 
     let len = 20;
     for (let i = 0; i < len; i++) {
@@ -568,6 +596,19 @@
             nodes = d3.selectAll('.node');
             links = d3.selectAll('.link');
 
+            nodes.on("mouseover", function (data) {
+
+            });
+            links.on("mouseover", function (data) {
+
+            });
+            links.on("mouseout", function (data) {
+                // links.style('opacity', 1);
+            });
+            nodes.on("mouseout", function (data) {
+                // links.style('opacity', 1);
+            });
+
             filterLinks = links.filter(function (path) {
                 let anotherSourceId = path.source.id;
                 let anotherTargetId = path.target.id;
@@ -585,6 +626,21 @@
             //要显示的link
             link_array = null;
             filterLinks = null;
+            console.log(link_list);
+            let tp = link_list[0]['source'];
+            let tn = link_list[1]['source'];
+            let fp = link_list[2]['source'];
+            let fn = link_list[2]['target'];
+
+            tp = tp.substring(3);
+            tn = tn.substring(3);
+            fp = fp.substring(3);
+            fn = fn.substring(3);
+
+            $('#tp_select').val(tp);
+            $('#tn_select').val(tn);
+            $('#fp_select').val(fp);
+            $('#fn_select').val(fn);
         }).catch(function (error) {
             console.log(error);
         });
@@ -666,12 +722,6 @@
 
         // d3.select("#reset_parameter_2").style('opacity', 0)
 
-        let x = d3.scale.linear()
-            .range([0, width_1]).nice();
-
-        let y = d3.scale.linear()
-            .range([height_1, 0]).nice();
-
         let xCat = "x",
             yCat = "y";
 
@@ -687,6 +737,16 @@
                 return 'False Positive';
             }
         };
+
+        let color_range = ["#aaccdd", "#00ddee", "#eeccff", "#00ff00", "#ff0000"];
+
+        // let color_radius = d3.scale.linear()
+        //     .domain([0, 20, 40, 60, 80, 100])
+        //     .range(color_range);
+
+        let color_radius = d3.scale.linear().domain([40, 60, 80, 100])
+            .interpolate(d3.interpolateHcl)
+            .range([d3.rgb("#007bff"), d3.rgb('#ffd700'),d3.rgb('#ff5ad7'),d3.rgb('#00ff00')]);
 
         axios.get('http://127.0.0.1:8000/wiki/param/position', {
             params: {}
@@ -708,6 +768,18 @@
 
             xMin = xMin > 0 ? 0 : xMin;
             yMin = yMin > 0 ? 0 : yMin;
+
+            // let custom_height = width_1 * (yMax - yMin) / (xMax - xMin);
+            // console.log(xMax-xMin);
+            // console.log(yMax-yMin);
+            //
+            // console.log('hello' + custom_height);
+            // console.log('word'+height_1)
+            let x = d3.scale.linear()
+                .range([0, width_1]).nice();
+
+            let y = d3.scale.linear()
+                .range([height_1, 0]).nice();
 
             x.domain([xMin, xMax]);
             y.domain([yMin, yMax]);
@@ -764,7 +836,7 @@
                 // Reset the color of all dots
                 lasso_left.items()
                     .style("fill", function (d) {
-                        return color(cValue(d));
+                        return color_radius(d.val);
                     });
 
                 // Style the selected dots
@@ -772,6 +844,7 @@
                     return d.selected === true
                 })
                     .classed({"not_possible": false, "possible": false})
+                    .style('fill', 'red')
                     .attr("r", 7);
 
                 // Reset the style of the not selected dots
@@ -899,7 +972,19 @@
                 .data(data)
                 .enter().append("circle")
                 .attr("id", function (d, i) {
-                    return "param_dot_" + i;
+                    let id = "param_dot_" + i;
+                    axios.get('http://127.0.0.1:8000/wiki/param', {
+                        params: {
+                            row_id: d.user,
+                        }
+                    }).then(function (response) {
+                        let data = response.data;
+                        let key = data.time_param + '#' + data.good_edit_param + '#' + data.bad_edit_param;
+                        parameter_position_map.set(key, id);
+                    });
+
+
+                    return id;
                 })
                 .classed("param_dot", true)
                 .attr("r", function (d) {
@@ -915,7 +1000,8 @@
                     return d.user;
                 })
                 .style("fill", function (d) {
-                    return color(cValue(d));
+                    // return color(cValue(d));
+                    return color_radius(d.val);
                 })
                 .on("mouseover", function (d) {
                     let x = d3.event.pageX;
@@ -939,6 +1025,26 @@
                     tooltip.transition()
                         .duration(500)
                         .style("opacity", 0);
+                });
+
+            let legend = svg.selectAll(".legend")
+                .data(color_radius.domain())
+                .enter().append("g")
+                .classed("legend", true)
+                .attr("transform", function (d, i) {
+                    return "translate(0," + (i * 20 + 5) + ")";
+                });
+
+            legend.append("circle")
+                .attr("r", 3.5)
+                .attr("cx", width + 20)
+                .attr("fill", color_radius);
+
+            legend.append("text")
+                .attr("x", width + 26)
+                .attr("dy", ".4em")
+                .text(function (d) {
+                    return d;
                 });
 
             lasso_left.items(d3.selectAll(".param_dot"));
@@ -1119,6 +1225,84 @@
         brush_3.extent([x2(bad_start), x2(bad_end)]);
     }
 
+    let color_hex = d3.scale.linear()
+        .domain([0, 10])
+        .range(["white", "steelblue"])
+        .interpolate(d3.interpolateLab);
+
+    let cValue = function (d) {
+        if (d.classification == 'TN') {
+            return 'True Vandal';
+        } else if (d.classification == 'FN') {
+            return 'False Vandal';
+        } else if (d.classification == 'TP') {
+            return 'True Benign';
+        } else {
+            return 'False Benign';
+        }
+    };
+
+    let color_scale = d3.scale.category10();
+    //store the source points of user in attribute space
+    let source_points = d3.map();
+    //store the points who are rendered in attribute space
+    let user_points = new Array();
+
+    /**
+     * 创建hexbins
+     * */
+    function create_hexbins(svg, index) {
+        let hex_bin_r = 15, hex_bin_d = 14.5;
+
+
+        let hexbin = d3.hexbin()
+            .size([400, 400])
+            .radius(hex_bin_r);
+
+        let hexagon = svg.append("g")
+            .attr("class", "hexagons")
+            .attr('id', 'hexagon')
+            .attr('width', width)
+            .attr('height', height)
+            .style('z-index', -1)
+            .selectAll("path")
+            .data(hexbin(user_points))
+            .enter().append("path")
+            .attr("id", function (d, i) {
+                return "hexbin_" + i;
+            })
+            .attr("d", hexbin.hexagon(hex_bin_d))
+            .classed('hexbin', true)
+            .attr("transform", function (d) {
+                return "translate(" + d.x + "," + d.y + ")";
+            })
+            .style("fill", function (d) {
+                // console.log(d);
+                let class_count = new d3.map();
+                for (let i = 0; i < d.length; i++) {
+                    let key = d[i][2];
+                    let value = class_count.get(key);
+                    if (value == undefined || value == 0) {
+                        class_count.set(key, 1);
+                    } else {
+                        class_count.set(key, value + 1);
+                    }
+                }
+                let max_value = 0;
+                let classification;
+                class_count.forEach(function (key, value) {
+                    max_value = Math.max(max_value, value);
+                    if (max_value == value) {
+                        classification = key;
+                    }
+                })
+
+                // return color_hex(d.length);
+                let type = {'classification': classification};
+                return color_scale(cValue(type));
+            });
+    }
+
     /**render the bottom div start------------------------------------------------------------------------------------------------------**/
     function render_scatter_plot(time_start, time_end, good_start, good_end, bad_start, bad_end) {
         let old_svg = d3.select("#scatter-plot");
@@ -1137,18 +1321,6 @@
         let xCat = "x",
             yCat = "y";
 
-
-        let cValue = function (d) {
-            if (d.classification == 'TN') {
-                return 'True Vandal';
-            } else if (d.classification == 'FN') {
-                return 'False Vandal';
-            } else if (d.classification == 'TP') {
-                return 'True Positive';
-            } else {
-                return 'False Positive';
-            }
-        };
 
         axios.get('http://127.0.0.1:8000/wiki/data', {
             params: {
@@ -1191,51 +1363,45 @@
                 .orient("left")
                 .tickSize(-width);
 
-            let color = d3.scale.category10();
-
             let zoomBeh = d3.behavior.zoom()
                 .x(x)
                 .y(y)
                 .scaleExtent([0, 500])
                 .on("zoomend", zoom);
 
-            let svg = d3.select("#bottom-div").append("svg").attr("id", "scatter-plot")
-                .attr("width", outerWidth + 100)
+            let svg = d3.select("#bottom-div-left").append("svg").attr("id", "scatter-plot")
+                .attr("width", outerWidth + 10)
                 .attr("height", outerHeight)
-                .append("g")
                 .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
-            let points = new Array();
+            let tp_points = new Array();
+            let tn_points = new Array();
+            let fp_points = new Array();
+            let fn_points = new Array();
             data.forEach(function (d) {
-                    points.push([x(d.x), y(d.y)]);
+                    // console.log(d);
+                    if (d.classification == 'TP') {
+                        tp_points.push([x(d.x), y(d.y), d.classification]);
+                    } else if (d.classification == 'TN') {
+                        tn_points.push([x(d.x), y(d.y), d.classification]);
+                    } else if (d.classification == 'FP') {
+                        fp_points.push([x(d.x), y(d.y), d.classification]);
+                    } else if (d.classification == 'FN') {
+                        fn_points.push([x(d.x), y(d.y), d.classification]);
+                    }
+                    user_points.push([x(d.x), y(d.y), d.classification]);
                 }
             );
 
-            let hex_bin_r = 15, hex_bin_d = 14.5;
-            let color_hex = d3.scale.linear()
-                .domain([0, 10])
-                .range(["white", "steelblue"])
-                .interpolate(d3.interpolateLab);
+            source_points.set('TP', tp_points);
+            source_points.set('TN', tn_points);
+            source_points.set('FP', fp_points);
+            source_points.set('FN', fn_points);
 
-            let hexbin = d3.hexbin()
-                .size([400, 400])
-                .radius(hex_bin_r);
+            let index = $('#index_select option:selected').val();
 
-            let hexagon = svg.append("g")
-                .attr("class", "hexagons")
-                .attr('width', width)
-                .attr('height', height)
-                .style('z-index', -1)
-                .selectAll("path")
-                .data(hexbin(points))
-                .enter().append("path")
-                .attr("d", hexbin.hexagon(hex_bin_d))
-                .attr("transform", function (d) {
-                    return "translate(" + d.x + "," + d.y + ")";
-                })
-                .style("fill", function (d) {
-                    return color_hex(d.length);
-                });
+            create_hexbins(svg, index);
+
 
             // Lasso functions to execute while lassoing
             let lasso_start = function () {
@@ -1381,7 +1547,7 @@
                 .data(data)
                 .enter().append("circle")
                 .attr("id", function (d, i) {
-                    return "dot_" + i;
+                    return "dot_" + d.classification + '_' + i;
                 })
                 .classed("dot", true)
                 .attr("r", function (d) {
@@ -1397,7 +1563,7 @@
                     return d.user;
                 })
                 .style("fill", function (d) {
-                    return color(cValue(d));
+                    return color_scale(cValue(d));
                 })
                 .on("mouseover", function (d) {
                     let x = d3.event.pageX;
@@ -1425,26 +1591,32 @@
             lasso.items(d3.selectAll(".dot"));
 
             let legend = svg.selectAll(".legend")
-                .data(color.domain())
+                .data(color_scale.domain())
                 .enter().append("g")
                 .classed("legend", true)
                 .attr("transform", function (d, i) {
-                    return "translate(0," + i * 20 + ")";
+                    return "translate(0," + (i * 20 + 5) + ")";
                 });
 
             legend.append("circle")
                 .attr("r", 3.5)
                 .attr("cx", width + 20)
-                .attr("fill", color);
+                .attr("fill", color_scale);
 
             legend.append("text")
                 .attr("x", width + 26)
-                .attr("dy", ".35em")
+                .attr("dy", ".4em")
                 .text(function (d) {
                     return d;
                 });
 
+            let indication = svg.append('g').classed('legend', true).attr("cx", width + 20).attr('transform', 'translate(0,80)');
+            indication.append('text').attr("x", width + 20).attr("dy", "4em").text('Hexbin Index');
+
+
+            d3.select('#as-title').style('opacity', 1);
             d3.select("#reset").style('opacity', 1).on("click", change);
+            d3.select('#bottom-div-right').style('display', 'block');
 
             function change() {
                 xCat = "x";
@@ -1615,6 +1787,7 @@
                 let time_range = result.time;
                 let good_range = result.good;
                 let bad_range = result.bad;
+                let parameters = result.parameter_keys;
 
                 time_start = time_range[0] >= 5 ? time_range[0] - 5 : 0;
                 time_end = time_range[len - 1] >= 100 ? time_range[len - 1] : time_range[len - 1] + 5;
@@ -1634,6 +1807,13 @@
                     bad_points.push({'x': bad_range[i], 'y': gap_y * 1.6});
                 }
                 render_points(time_points, good_points, bad_points);
+                parameters.forEach(function (key) {
+                    let id = parameter_position_map.get(key);
+                    if (id != undefined) {
+                        d3.select('#' + id).style('fill', 'red')
+                            .attr("r", 7);
+                    }
+                });
             }
 
 
@@ -1718,6 +1898,100 @@
 
     $(document).ready(function () {
         // alert('fuck');
-    })
+    });
 
+    /**
+     * 更新hexbins
+     * */
+    function update_hexbins(index) {
+        let hex_bin_r = 15, hex_bin_d = 14.5;
+
+
+        let hexbin = d3.hexbin()
+            .size([400, 400])
+            .radius(hex_bin_r);
+
+        $('#hexagon').empty();
+
+        d3.select('#hexagon').selectAll("path")
+            .data(hexbin(user_points))
+            .enter().append("path")
+            .attr("id", function (d, i) {
+                return "hexbin_" + i;
+            })
+            .attr("d", hexbin.hexagon(hex_bin_d))
+            .classed('hexbin', true)
+            .attr("transform", function (d) {
+                return "translate(" + d.x + "," + d.y + ")";
+            })
+            .style("fill", function (d) {
+                if (index == 'density') {
+                    return color_hex(d.length);
+                } else {
+                    let class_count = new d3.map();
+                    for (let i = 0; i < d.length; i++) {
+                        let key = d[i][2];
+                        let value = class_count.get(key);
+                        if (value == undefined || value == 0) {
+                            class_count.set(key, 1);
+                        } else {
+                            class_count.set(key, value + 1);
+                        }
+                    }
+                    let max_value = 0;
+                    let classification;
+                    class_count.forEach(function (key, value) {
+                        max_value = Math.max(max_value, value);
+                        if (max_value == value) {
+                            classification = key;
+                        }
+                    })
+                    console.log(classification);
+                    let type = {'classification': classification};
+                    return color_scale(cValue(type));
+                }
+            });
+    }
+
+
+    /**
+     * 修改背景图层的颜色
+     */
+    function bg_change() {
+        let index = $('#index_select option:selected').val();
+        update_hexbins(index);
+
+    }
+
+    function filter_uers() {
+        let check_items = $('input:checkbox:checked');
+        if (check_items == undefined) {
+            return;
+        }
+        for (let i = 0; i < check_items.length; i++) {
+            let type = check_items[i].value;
+            let expression = '[id^=' + 'dot_' + type + ']';
+            $(expression).each(function () {
+                $(this).attr('user-flag', 1);
+            }).css('opacity', 1);
+        }
+        $('.dot').filter(function () {
+            let flag = $(this).attr('user-flag');
+            return flag == undefined;
+        }).css('opacity', 0);
+
+        user_points.splice(0, user_points.length);
+        for (let i = 0; i < check_items.length; i++) {
+            let type = check_items[i].value;
+            let expression = '[id^=' + 'dot_' + type + ']';
+            $(expression).each(function () {
+                $(this).removeAttr('user-flag');
+            });
+            source_points.get(type).forEach(function (d) {
+                user_points.push(d);
+            });
+        }
+        let index = $('#index_select option:selected').val();
+        update_hexbins(index);
+    }
 </script>

@@ -170,24 +170,58 @@
     .hexbin {
 
     }
+
+    .user_checkbox {
+
+    }
+
+    .param_checkbox {
+
+    }
 </style>
 <body>
 <div class="container">
-    <div id="left-div" style="width:31%;height:100%;float:left;">
+    <div id="left-div" style="width:38%;height:100%;float:left;">
+        <div style="text-align: center;font-size: 22px; font-family: Arial;"> parameter space</div>
         <div id="left-div-2" style="float:left">
-            <div style="text-align: center;font-size: 22px; font-family: Arial;"> parameter space</div>
-            <input type="button" id='reset_parameter_2' style="opacity: 1;" value="reset">
+            <input type="button" id='reset_parameter_2' style="opacity: 0;" value="reset">
+            <div id="left-div-2-left" style="float: left;width:90%;"></div>
+            <div id="left-div-2-right" style="display: block;width: 10%;float: right;text-align: left;display:none;">
+                <div>
+                    <input type="checkbox" class='param_checkbox' id="param_1_checkbox" onclick="filter_parameters()"
+                           value="60" checked="checked" style="opacity: 0;"/>
+                </div>
+                <div>
+                    <input type="checkbox" class='param_checkbox' id="param_2_checkbox" onclick="filter_parameters()"
+                           value="80" checked="checked" style="opacity: 0;"/>
+                </div>
+                <div>
+                    <input type="checkbox" class='param_checkbox' id="param_3_checkbox" onclick="filter_parameters()"
+                           style="opacity: 0;"
+                           value="40" checked="checked"/>
+                </div>
+                <div style="margin-top: 40px;">
+                    <select id="param_index_select" onchange="param_bg_change()">
+                        <option value="majority" selected="selected">majority</option>
+                        <option value="density">density</option>
+                    </select>
+                </div>
+            </div>
         </div>
-        <input type="button" id='reset_parameter' style="opacity: 1;" value="reset" onclick="reset_parameter()">
+        <div>
+            <input type="button" id='reset_parameter' style="opacity: 1;" value="reset" onclick="reset_slide_window()">
+        </div>
         <div id="left-div-1" style="float:left;padding-left: 50px;">
         </div>
     </div>
-    <div id="middle-div" style="width:31%;height:800px;float:left;">
+    <div id="middle-div" style="width:24%;height:800px;float:left;">
         <div style="text-align: center;font-size: 22px; font-family: Arial;"> result space</div>
         <div id='middle-top-div' style="width:100%;height:600px;float:left;"></div>
         <div id='middle-down-div' style="width:100%;height:100px;float:left;margin-top:50px;">
             <div style="width: 25%; float: left;">
-                TP:
+                <div style="float: left;">
+                    TP:
+                </div>
                 <select id="tp_select" onchange="on_change()">
                     <option value=5 selected="selected">5</option>
                     <option value=10>10</option>
@@ -212,7 +246,7 @@
                 </select>
             </div>
             <div style="width: 25%; float: left;">
-                <div style="margin-left: 50px; float: left;">
+                <div style="margin-left:10%; float: left;">
                     TN:
                 </div>
                 <select id="tn_select" onchange="on_change()">
@@ -239,7 +273,7 @@
                 </select>
             </div>
             <div style="width: 25%; float: left;">
-                <div style="margin-left: 70px; float: left;">
+                <div style="margin-left: 25%; float: left;">
                     FP:
                 </div>
                 <select id="fp_select" onchange="on_change()">
@@ -266,7 +300,7 @@
                 </select>
             </div>
             <div style="width: 25%; float: left;">
-                <div style="margin-left: 70px; float: left;">
+                <div style="margin-left: 35%; float: left;">
                     FN:
                 </div>
                 <select id="fn_select" onchange="on_change()">
@@ -298,19 +332,23 @@
         <div style="text-align: center;font-size: 22px; font-family: Arial;opacity: 0;" id="as-title"> attribute space
         </div>
         <div id="bottom-div-left" style="float: left;width:90%;"></div>
-        <div id="bottom-div-right" style="display: none;width: 10%;float: right;text-align: center">
+        <div id="bottom-div-right" style="display: block;opacity: 0;width: 10%;float: right;text-align: center">
             <input type="button" id='reset' style="opacity: 0;" value="reset">
             <div>
-                <input type="checkbox" id="tp_checkbox" onclick="filter_uers()" value="TP" checked="checked"/>
+                <input type="checkbox" class='user_checkbox' id="user_1_checkbox" onclick="filter_uers()" value="TP"
+                       checked="checked"/>
             </div>
             <div>
-                <input type="checkbox" id="tn_checkbox" onclick="filter_uers()" value="TN" checked="checked"/>
+                <input type="checkbox" class='user_checkbox' id="user_2_checkbox" onclick="filter_uers()" value="TN"
+                       checked="checked"/>
             </div>
             <div>
-                <input type="checkbox" id="fn_checkbox" onclick="filter_uers()" value="FN" checked="checked"/>
+                <input type="checkbox" class='user_checkbox' id="user_3_checkbox" onclick="filter_uers()" value="FN"
+                       checked="checked"/>
             </div>
             <div>
-                <input type="checkbox" id="fp_checkbox" onclick="filter_uers()" value="FP" checked="checked"/>
+                <input type="checkbox" class='user_checkbox' id="user_4_checkbox" onclick="filter_uers()" value="FP"
+                       checked="checked"/>
             </div>
             <div style="margin-top: 40px;">
                 <select id="index_select" onchange="bg_change()">
@@ -330,6 +368,7 @@
 <script src="http://labratrevenge.com/d3-tip/javascripts/d3.tip.v0.6.3.js"></script>
 <script src="./js/lasso.min.js"></script>
 <script src="./js/jquery-1.12.4.js"></script>
+<script src="./js/const.js"></script>
 <script src="http://d3js.org/d3.hexbin.v0.min.js"></script>
 <script>
     //define the tooltip to show the detail information
@@ -352,7 +391,9 @@
         'TP': 'orange',
         'TN': 'green',
         'FP': 'red',
-        'FN': 'blue'
+        'FN': 'blue',
+        'fallback': '#9f9fa3',
+
     };
     let link;
     let nodes;
@@ -537,15 +578,20 @@
     /**
      * query link according to the combinations of parameters
      * */
-    function query_link() {
-        axios.get('http://127.0.0.1:8000/wiki/model/result', {
+    function query_link(json_ids) {
+        if (json_ids == undefined) {
+            json_ids = ''
+        }
+        axios.get(server_url+'/wiki/model/result', {
             params: {
                 time_start: time_start,
                 time_end: time_end,
                 good_start: good_start,
                 good_end: good_end,
                 bad_start: bad_start,
-                bad_end: bad_end
+                bad_end: bad_end,
+                ids: json_ids,
+
             }
         }).then(function (response) {
             let link_list = response.data;
@@ -617,7 +663,6 @@
 
             links.style('opacity', 1);
             filterLinks.style('opacity', 0.02);
-            render_scatter_plot(time_start, time_end, good_start, good_end, bad_start, bad_end);
 
             //要移除的旧的link
             remove_links = null;
@@ -650,6 +695,8 @@
      * 刷子滑动结束后的动作
      * */
     function brush_end(flag) {
+        //clean points in the slide window chart
+        reset_parameter();
         let brush;
         if (flag == 1) {
             brush = brush_1;
@@ -699,22 +746,49 @@
 
         //request data
         query_link();
+        render_scatter_plot();
 
     }
 
+    /**
+     * initiate the slide window
+     * */
+    function initiate_slide_window() {
+        d3.selectAll(".extent").attr('width', x2(10) - x2(0));
+        d3.selectAll(".extent").attr('x', x2(0) + offset / 2);
+        brush_1.extent([x2(10), x2(0)]);
+        brush_2.extent([x2(10), x2(0)]);
+        brush_3.extent([x2(10), x2(0)]);
+    }
+
     //set the default range
-    d3.selectAll(".extent").attr('width', x2(10) - x2(0));
-    d3.selectAll(".extent").attr('x', x2(0) + offset / 2);
-    brush_1.extent([x2(10), x2(0)]);
-    brush_2.extent([x2(10), x2(0)]);
-    brush_3.extent([x2(10), x2(0)]);
+    initiate_slide_window();
 
     create_parameter_scatter_plot();
+
+    let param_cValue = function (d) {
+        if (d.val <= 40) {
+            return 'poor';
+        } else if (d.val > 40 && d.val <= 60) {
+            return 'average';
+        } else if (d.val > 60 && d.val <= 80) {
+            return 'good';
+        } else if (d.val > 80 && d.val <= 100) {
+            return 'excellent';
+        }
+    };
+
+    let color_radius = d3.scale.category10();
+
+    let old_attributes = new Array();
 
     /**
      * create scatter plot for parameter space
      * */
     function create_parameter_scatter_plot() {
+        $('#param_1_checkbox').prop("checked", true);
+        $('#param_2_checkbox').prop("checked", true);
+        $('#param_3_checkbox').prop("checked", true);
         let old_svg = d3.select("#param-scatter-plot");
         if (old_svg != undefined) {
             old_svg.remove();
@@ -738,17 +812,7 @@
             }
         };
 
-        let color_range = ["#aaccdd", "#00ddee", "#eeccff", "#00ff00", "#ff0000"];
-
-        // let color_radius = d3.scale.linear()
-        //     .domain([0, 20, 40, 60, 80, 100])
-        //     .range(color_range);
-
-        let color_radius = d3.scale.linear().domain([40, 60, 80, 100])
-            .interpolate(d3.interpolateHcl)
-            .range([d3.rgb("#007bff"), d3.rgb('#ffd700'),d3.rgb('#ff5ad7'),d3.rgb('#00ff00')]);
-
-        axios.get('http://127.0.0.1:8000/wiki/param/position', {
+        axios.get(server_url+'/wiki/param/position', {
             params: {}
         }).then(function (response) {
             let data = response.data;
@@ -766,8 +830,11 @@
                     return d[yCat];
                 });
 
-            xMin = xMin > 0 ? 0 : xMin;
-            yMin = yMin > 0 ? 0 : yMin;
+            xMin = xMin > 0 ? 0 : xMin - 200;
+            yMin = yMin > 0 ? 0 : yMin - 200;
+
+            xMax = xMax + 200;
+            yMax = yMax + 200;
 
             // let custom_height = width_1 * (yMax - yMin) / (xMax - xMin);
             // console.log(xMax-xMin);
@@ -794,7 +861,33 @@
                 .orient("left")
                 .tickSize(-width_1);
 
-            let color = d3.scale.category10();
+
+            let _40_points = new Array();
+            let _60_points = new Array();
+            let _80_points = new Array();
+            let _100_points = new Array();
+            data.forEach(function (d) {
+                    // console.log(d);
+                    if (d.val <= 40) {
+                        _40_points.push([x(d.x), y(d.y), d.val]);
+                        param_points.push([x(d.x), y(d.y), 40]);
+                    } else if (d.val > 40 && d.val <= 60) {
+                        _60_points.push([x(d.x), y(d.y), d.val]);
+                        param_points.push([x(d.x), y(d.y), 60]);
+                    } else if (d.val > 60 && d.val <= 80) {
+                        _80_points.push([x(d.x), y(d.y), d.val]);
+                        param_points.push([x(d.x), y(d.y), 80]);
+                    } else if (d.val > 80 && d.val <= 100) {
+                        _100_points.push([x(d.x), y(d.y), d.val]);
+                        param_points.push([x(d.x), y(d.y), 100]);
+                    }
+                }
+            );
+
+            param_source_points.set('40', _40_points);
+            param_source_points.set('60', _60_points);
+            param_source_points.set('80', _80_points);
+            param_source_points.set('100', _100_points);
 
             let zoomBeh = d3.behavior.zoom()
                 .x(x)
@@ -802,12 +895,15 @@
                 .scaleExtent([0, 500])
                 .on("zoomend", zoom);
 
-            let svg = d3.select("#left-div-2").append("svg").attr("id", "param-scatter-plot")
-                .attr("width", outerWidth)
+            let svg = d3.select("#left-div-2-left").append("svg").attr("id", "param-scatter-plot")
+                .attr("width", outerWidth + 50)
                 .attr("height", outerHeight_1)
                 .append("g")
                 .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
+            let index = $('#param_index_select option:selected').val();
+
+            create_param_hexbins(svg, index);
 
             // Lasso functions to execute while lassoing
             let lasso_start = function () {
@@ -833,15 +929,32 @@
 
             let lasso_end = function () {
                 reset_parameter();
+                initiate_slide_window();
                 // Reset the color of all dots
                 lasso_left.items()
                     .style("fill", function (d) {
-                        return color_radius(d.val);
+                        return color_radius(param_cValue(d));
                     });
+                let copy_selected_points = lasso_left.items().filter(function (d) {
+                    return d.selected === true;
+                })[0];
+                old_attributes.splice(0, old_attributes.length);
+                copy_selected_points.forEach(function (point) {
+                    let id = point.attributes['id'].nodeValue;
+                    let r = point.attributes['r'].nodeValue;
+                    let style = point.attributes['style'].nodeValue;
+                    old_attributes.push({
+                        'id': id,
+                        'r': r,
+                        'style': style
+                    });
+
+                });
+
 
                 // Style the selected dots
                 lasso_left.items().filter(function (d) {
-                    return d.selected === true
+                    return d.selected === true;
                 })
                     .classed({"not_possible": false, "possible": false})
                     .style('fill', 'red')
@@ -860,13 +973,19 @@
                 let selected_points = selected_items[0];
                 let ids = new Array();
                 selected_points.forEach(function (item) {
-                    console.log(item.attributes['user_id'].value);
-                    ids.push(item.attributes['user_id'].value);
+                    let opacity = $('#' + item.id).css('opacity');
+                    if (opacity == 0) {
+                        return;
+                    } else {
+                        console.log(item.attributes['user_id'].value);
+                        ids.push(item.attributes['user_id'].value);
+                    }
                 })
-                console.log(ids);
-                axios.get('http://127.0.0.1:8000/wiki/param/ids', {
+                // console.log(ids);
+                let json_ids = JSON.stringify(ids);
+                axios.get(server_url+'/wiki/param/ids', {
                     params: {
-                        ids: JSON.stringify(ids),
+                        ids: json_ids,
                     }
                 }).then(function (response) {
                     let result = response.data;
@@ -897,7 +1016,8 @@
                             bad_points.push({'x': bad_range[i], 'y': gap_y * 1.6});
                         }
                         render_points(time_points, good_points, bad_points);
-                        query_link();
+                        query_link(json_ids);
+                        render_scatter_plot();
                     }
                 }).catch(function (error) {
                     console.log(error);
@@ -972,8 +1092,18 @@
                 .data(data)
                 .enter().append("circle")
                 .attr("id", function (d, i) {
-                    let id = "param_dot_" + i;
-                    axios.get('http://127.0.0.1:8000/wiki/param', {
+                    let tag = '';
+                    if (d.val <= 40) {
+                        tag = 40;
+                    } else if (d.val > 40 && d.val <= 60) {
+                        tag = 60;
+                    } else if (d.val > 60 && d.val <= 80) {
+                        tag = 80;
+                    } else if (d.val > 80 && d.val <= 100) {
+                        tag = 100;
+                    }
+                    let id = "param_dot_" + tag + '_' + i;
+                    axios.get(server_url+'/wiki/param', {
                         params: {
                             row_id: d.user,
                         }
@@ -1001,12 +1131,12 @@
                 })
                 .style("fill", function (d) {
                     // return color(cValue(d));
-                    return color_radius(d.val);
+                    return color_radius(param_cValue(d));
                 })
                 .on("mouseover", function (d) {
                     let x = d3.event.pageX;
                     let y = d3.event.pageY;
-                    axios.get('http://127.0.0.1:8000/wiki/param', {
+                    axios.get(server_url+'/wiki/param', {
                         params: {
                             row_id: d.user,
                         }
@@ -1032,6 +1162,24 @@
                 .enter().append("g")
                 .classed("legend", true)
                 .attr("transform", function (d, i) {
+                    let value;
+                    if (d == 'average') {
+                        value = 60;
+                    } else if (d == 'good') {
+                        value = 80;
+                    } else {
+                        value = 40;
+                    }
+                    if (i == 0) {
+                        $('#param_1_checkbox').val(value);
+                        $('#param_1_checkbox').css('opacity', 1);
+                    } else if (i == 1) {
+                        $('#param_2_checkbox').val(value);
+                        $('#param_2_checkbox').css('opacity', 1);
+                    } else {
+                        $('#param_3_checkbox').val(value);
+                        $('#param_3_checkbox').css('opacity', 1);
+                    }
                     return "translate(0," + (i * 20 + 5) + ")";
                 });
 
@@ -1047,9 +1195,13 @@
                     return d;
                 });
 
+            let indication = svg.append('g').classed('legend', true).attr("cx", width + 20).attr('transform', 'translate(0,60)');
+            indication.append('text').attr("x", width + 20).attr("dy", "4em").text('Hexbin Index');
+
             lasso_left.items(d3.selectAll(".param_dot"));
 
             d3.select("#reset_parameter_2").style('opacity', 1).on("click", change);
+            d3.select("#left-div-2-right").style('display', 'block');
 
             function change() {
                 xCat = "x";
@@ -1074,6 +1226,9 @@
                         return y(d.y);
                     });
                 // attr("transform", transform);
+                reset_parameter_points();
+                reset_slide_window();
+                d3.select('#param_hexagon').style("opacity", 1);
             }
 
             function zoom() {
@@ -1088,6 +1243,7 @@
                         return y(d.y);
                     })
                 // .attr("transform", transform);
+                d3.select('#param_hexagon').style("opacity", 0);
             }
 
             function transform(d) {
@@ -1123,10 +1279,10 @@
         chart
             .name(label)
             .colorNodes(function (name, node) {
-                return color(node, 1) || colors.fallback;
+                return color_sankey(node, 1) || colors.fallback;
             })
             .colorLinks(function (link) {
-                return color(link.source, 4) || color(link.target, 1) || colors.fallback;
+                return color_sankey(link.source, 4) || color_sankey(link.target, 1) || colors.fallback;
             })
             .nodeWidth(15)
             .nodePadding(10)
@@ -1190,7 +1346,7 @@
         return node.name.replace(/\s*\(.*?\)$/, '');
     }
 
-    function color(node, depth) {
+    function color_sankey(node, depth) {
         let id = node.id.replace(/(_score)?(_\d+)?$/, '');
         if (colors[id]) {
             return colors[id];
@@ -1230,15 +1386,20 @@
         .range(["white", "steelblue"])
         .interpolate(d3.interpolateLab);
 
+    let trueVandal = 'True Vandal';
+    let falseVandal = 'False Vandal';
+    let trueBenign = 'True Benign';
+    let falseBenign = 'False Benign';
+
     let cValue = function (d) {
         if (d.classification == 'TN') {
-            return 'True Vandal';
+            return trueVandal;
         } else if (d.classification == 'FN') {
-            return 'False Vandal';
+            return falseVandal;
         } else if (d.classification == 'TP') {
-            return 'True Benign';
+            return trueBenign;
         } else {
-            return 'False Benign';
+            return falseBenign;
         }
     };
 
@@ -1248,11 +1409,78 @@
     //store the points who are rendered in attribute space
     let user_points = new Array();
 
+    //store the source points of parameter in parameter space
+    let param_source_points = d3.map();
+    //store the points who are rendered in parameter space
+    let param_points = new Array();
+
+    /**
+     * 创建hexbins in parameter space
+     * */
+    function create_param_hexbins(svg, index) {
+        let hex_bin_r, hex_bin_d;
+
+        hex_bin_r = 10;
+        hex_bin_d = 9.5;
+
+        let hexbin = d3.hexbin()
+            .size([400, 400])
+            .radius(hex_bin_r);
+
+        let hexagon = svg.append("g")
+            .attr("class", "hexagons")
+            .attr('id', 'param_hexagon')
+            .attr('width', width)
+            .attr('height', height)
+            .style('z-index', -1)
+            .selectAll("path")
+            .data(hexbin(param_points))
+            .enter().append("path")
+            .attr("id", function (d, i) {
+                return "hexbin_" + i;
+            })
+            .attr("d", hexbin.hexagon(hex_bin_d))
+            .classed('hexbin', true)
+            .attr("transform", function (d) {
+                return "translate(" + d.x + "," + d.y + ")";
+            })
+            .style("fill", function (d) {
+                if (index == 'density') {
+                    return color_hex(d.length);
+                } else {
+                    // console.log(d);
+                    let class_count = new d3.map();
+                    for (let i = 0; i < d.length; i++) {
+                        let key = d[i][2];
+                        let value = class_count.get(key);
+                        if (value == undefined || value == 0) {
+                            class_count.set(key, 1);
+                        } else {
+                            class_count.set(key, value + 1);
+                        }
+                    }
+                    let max_value = 0;
+                    let classification;
+                    class_count.forEach(function (key, value) {
+                        max_value = Math.max(max_value, value);
+                        if (max_value == value) {
+                            classification = key;
+                        }
+                    })
+
+                    let type = {'val': classification};
+                    return color_radius(param_cValue(type));
+                }
+            });
+    }
+
     /**
      * 创建hexbins
      * */
     function create_hexbins(svg, index) {
-        let hex_bin_r = 15, hex_bin_d = 14.5;
+        let hex_bin_r, hex_bin_d;
+        hex_bin_r = 15;
+        hex_bin_d = 14.5;
 
 
         let hexbin = d3.hexbin()
@@ -1277,34 +1505,43 @@
                 return "translate(" + d.x + "," + d.y + ")";
             })
             .style("fill", function (d) {
-                // console.log(d);
-                let class_count = new d3.map();
-                for (let i = 0; i < d.length; i++) {
-                    let key = d[i][2];
-                    let value = class_count.get(key);
-                    if (value == undefined || value == 0) {
-                        class_count.set(key, 1);
-                    } else {
-                        class_count.set(key, value + 1);
+                if (index == 'density') {
+                    return color_hex(d.length);
+                } else {
+                    // console.log(d);
+                    let class_count = new d3.map();
+                    for (let i = 0; i < d.length; i++) {
+                        let key = d[i][2];
+                        let value = class_count.get(key);
+                        if (value == undefined || value == 0) {
+                            class_count.set(key, 1);
+                        } else {
+                            class_count.set(key, value + 1);
+                        }
                     }
+                    let max_value = 0;
+                    let classification;
+                    class_count.forEach(function (key, value) {
+                        max_value = Math.max(max_value, value);
+                        if (max_value == value) {
+                            classification = key;
+                        }
+                    })
+                    let type = {'classification': classification};
+                    return color_scale(cValue(type));
                 }
-                let max_value = 0;
-                let classification;
-                class_count.forEach(function (key, value) {
-                    max_value = Math.max(max_value, value);
-                    if (max_value == value) {
-                        classification = key;
-                    }
-                })
-
-                // return color_hex(d.length);
-                let type = {'classification': classification};
-                return color_scale(cValue(type));
             });
     }
 
     /**render the bottom div start------------------------------------------------------------------------------------------------------**/
-    function render_scatter_plot(time_start, time_end, good_start, good_end, bad_start, bad_end) {
+    function render_scatter_plot() {
+        d3.select('#bottom-div-right').style('opacity', '0');
+        $('#user_1_checkbox').prop("checked", true);
+        $('#user_2_checkbox').prop("checked", true);
+        $('#user_3_checkbox').prop("checked", true);
+        $('#user_4_checkbox').prop("checked", true);
+        //clear the old data
+        user_points.splice(0, user_points.length);
         let old_svg = d3.select("#scatter-plot");
         if (old_svg != undefined) {
             old_svg.remove();
@@ -1322,7 +1559,7 @@
             yCat = "y";
 
 
-        axios.get('http://127.0.0.1:8000/wiki/data', {
+        axios.get(server_url+'/wiki/data', {
             params: {
                 time_start: time_start,
                 time_end: time_end,
@@ -1346,7 +1583,14 @@
                 yMin = d3.min(data, function (d) {
                     return d[yCat];
                 });
-
+            let r_scale = d3.scale.linear().range([0.5, 10]);
+            let rMax = d3.max(data, function (d) {
+                    return d['attribute'];
+                }),
+                rMin = d3.min(data, function (d) {
+                    return d['attribute'];
+                });
+            r_scale.domain([rMin, rMax]);
             xMin = xMin > 0 ? 0 : xMin;
             yMin = yMin > 0 ? 0 : yMin;
 
@@ -1370,8 +1614,9 @@
                 .on("zoomend", zoom);
 
             let svg = d3.select("#bottom-div-left").append("svg").attr("id", "scatter-plot")
-                .attr("width", outerWidth + 10)
+                .attr("width", outerWidth + 60)
                 .attr("height", outerHeight)
+                .append("g")
                 .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
             let tp_points = new Array();
@@ -1406,7 +1651,9 @@
             // Lasso functions to execute while lassoing
             let lasso_start = function () {
                 lasso.items()
-                    .attr("r", 3.5) // reset size
+                    .attr("r", function (d) {
+                        return r_scale(d.attribute);
+                    }) // reset size
                     .style("fill", null) // clear all of the fills
                     .classed({"not_possible": true, "selected": false}); // style as not possible
             };
@@ -1427,10 +1674,12 @@
 
             let lasso_end = function () {
                 reset_parameter();
+                initiate_slide_window();
+                reset_parameter_points();
                 // Reset the color of all dots
                 lasso.items()
                     .style("fill", function (d) {
-                        return color(cValue(d));
+                        return color_scale(cValue(d));
                     });
 
                 // Style the selected dots
@@ -1438,14 +1687,17 @@
                     return d.selected === true
                 })
                     .classed({"not_possible": false, "possible": false})
-                    .attr("r", 7);
+                    .style('fill', 'yellow')
+                    .attr("r", 15);
 
                 // Reset the style of the not selected dots
                 lasso.items().filter(function (d) {
                     return d.selected === false
                 })
                     .classed({"not_possible": false, "possible": false})
-                    .attr("r", 3.5);
+                    .attr("r", function (d) {
+                        return r_scale(d.attribute);
+                    });
 
                 let selected_items = lasso.items().filter(function (d) {
                     return d.selected === true
@@ -1453,11 +1705,16 @@
                 let selected_points = selected_items[0];
                 let user_ids = new Array();
                 selected_points.forEach(function (item) {
+                    let opacity = $('#' + item.id).css('opacity');
+                    if (opacity == 0) {
+                        return;
+                    }
+
                     console.log(item.attributes['user_id'].value);
                     user_ids.push(item.attributes['user_id'].value);
                 })
                 console.log(user_ids);
-                axios.get('http://127.0.0.1:8000/wiki/params/range', {
+                axios.get(server_url+'/wiki/params/range', {
                     params: {
                         user_ids: JSON.stringify(user_ids),
                     }
@@ -1473,6 +1730,35 @@
                     bad_end = data.bad_edit_param >= 100 ? data.bad_edit_param : data.bad_edit_param + 5;
 
                     render_parameter_range(time_start, time_end, good_start, good_end, bad_start, bad_end);
+
+                    let time_points = new Array();
+                    let good_points = new Array();
+                    let bad_points = new Array();
+                    for (let i = 0; i < len; i++) {
+                        time_points.push({'x': data.time_param, 'y': gap_y * 1.6});
+                        good_points.push({'x': data.good_edit_param, 'y': gap_y * 1.6});
+                        bad_points.push({'x': data.bad_edit_param, 'y': gap_y * 1.6});
+                    }
+                    render_points(time_points, good_points, bad_points);
+
+                    //render points in scatter plot in parameter space
+                    old_attributes.splice(0, old_attributes.length);
+                    let key = data.time_param + '#' + data.good_edit_param + '#' + data.bad_edit_param;
+
+                    let id = parameter_position_map.get(key);
+                    if (id != undefined) {
+
+                        old_attributes.push({
+                            'id': id,
+                            'r': $('#' + id).attr('r'),
+                            'style': $('#' + id).attr('style')
+                        });
+
+                        d3.select('#' + id).style('fill', 'red')
+                            .attr("r", 7);
+                    }
+                    //update the result place
+                    query_link();
                 }).catch(function (error) {
                     console.log(error);
                 });
@@ -1481,7 +1767,7 @@
 
 
             // Create the area where the lasso event can be triggered
-            let lasso_area = svg.append("rect")
+            let lasso_area = svg.append("rect").attr('id', 'lasso_rect')
                 .attr("width", width)
                 .attr("height", height)
                 .style("opacity", 0);
@@ -1551,7 +1837,8 @@
                 })
                 .classed("dot", true)
                 .attr("r", function (d) {
-                    return 3.5;
+                    return r_scale(d.attribute);
+                    // return 3.5;
                 })
                 .attr("cx", function (d) {
                     return x(d.x);
@@ -1568,7 +1855,7 @@
                 .on("mouseover", function (d) {
                     let x = d3.event.pageX;
                     let y = d3.event.pageY;
-                    axios.get('http://127.0.0.1:8000/wiki/user', {
+                    axios.get(server_url+'/wiki/user', {
                         params: {
                             row_id: d.user,
                         }
@@ -1595,6 +1882,25 @@
                 .enter().append("g")
                 .classed("legend", true)
                 .attr("transform", function (d, i) {
+                    let value;
+                    if (d == trueBenign) {
+                        value = 'TP';
+                    } else if (d == falseBenign) {
+                        value = 'FP';
+                    } else if (d == trueVandal) {
+                        value = 'TN';
+                    } else {
+                        value = 'FN';
+                    }
+                    if (i == 0) {
+                        $('#user_1_checkbox').val(value);
+                    } else if (i == 1) {
+                        $('#user_2_checkbox').val(value);
+                    } else if (i == 2) {
+                        $('#user_3_checkbox').val(value);
+                    } else {
+                        $('#user_4_checkbox').val(value);
+                    }
                     return "translate(0," + (i * 20 + 5) + ")";
                 });
 
@@ -1616,7 +1922,7 @@
 
             d3.select('#as-title').style('opacity', 1);
             d3.select("#reset").style('opacity', 1).on("click", change);
-            d3.select('#bottom-div-right').style('display', 'block');
+            d3.select('#bottom-div-right').style('opacity', '1');
 
             function change() {
                 xCat = "x";
@@ -1643,7 +1949,16 @@
                         return y(d.y);
                     });
                 // attr("transform", transform);
-                d3.select('.hexagons').style("opacity", 1);
+                d3.select('#hexagon').style("opacity", 1);
+                lasso.items()
+                    .style("fill", function (d) {
+                        return color_scale(cValue(d));
+                    });
+                lasso.items()
+                    .classed({"not_possible": false, "possible": false})
+                    .attr("r", function (d) {
+                        return r_scale(d.attribute);
+                    });
             }
 
             function zoom() {
@@ -1658,7 +1973,7 @@
                         return y(d.y);
                     })
                 // .attr("transform", transform);
-                d3.select('.hexagons').style("opacity", 0);
+                d3.select('#hexagon').style("opacity", 0);
             }
 
             function transform(d) {
@@ -1697,6 +2012,7 @@
      * function that is registered to listen to select event
      */
     function on_change() {
+        reset_parameter_points();
         reset_parameter();
         let tp = $('#tp_select option:selected').val();
         let tp_node = 'TP_' + tp;
@@ -1759,7 +2075,6 @@
 
         links.style('opacity', 1);
         filterLinks.style('opacity', 0.02);
-        // render_scatter_plot(time_start, time_end, good_start, good_end, bad_start, bad_end);
 
         //要移除的旧的link
         remove_links = null;
@@ -1770,7 +2085,7 @@
         filterLinks = null;
 
         //request data
-        axios.get('http://127.0.0.1:8000/wiki/params/', {
+        axios.get(server_url+'/wiki/params/', {
             params: {
                 fp: fp,
                 tp: tp,
@@ -1807,9 +2122,18 @@
                     bad_points.push({'x': bad_range[i], 'y': gap_y * 1.6});
                 }
                 render_points(time_points, good_points, bad_points);
+                //render points in scatter plot in parameter space
+                old_attributes.splice(0, old_attributes.length);
                 parameters.forEach(function (key) {
                     let id = parameter_position_map.get(key);
                     if (id != undefined) {
+
+                        old_attributes.push({
+                            'id': id,
+                            'r': $('#' + id).attr('r'),
+                            'style': $('#' + id).attr('style')
+                        });
+
                         d3.select('#' + id).style('fill', 'red')
                             .attr("r", 7);
                     }
@@ -1889,11 +2213,17 @@
             });
     }
 
+    function reset_slide_window() {
+        reset_parameter();
+        initiate_slide_window();
+    }
+
     /**
      * listener on reset button in parameter space
      */
     function reset_parameter() {
         $('.point').remove();
+        reset_parameter_points();
     }
 
     $(document).ready(function () {
@@ -1958,13 +2288,18 @@
      * 修改背景图层的颜色
      */
     function bg_change() {
+        $('#reset').trigger('click');
         let index = $('#index_select option:selected').val();
         update_hexbins(index);
 
     }
 
+    /**
+     * filter user points
+     */
     function filter_uers() {
-        let check_items = $('input:checkbox:checked');
+        // let check_items = $('input:checkbox:checked');
+        let check_items = $('.user_checkbox:checked');
         if (check_items == undefined) {
             return;
         }
@@ -1993,5 +2328,118 @@
         }
         let index = $('#index_select option:selected').val();
         update_hexbins(index);
+    }
+
+    /**
+     * 更新hexbins in parameter space
+     * */
+    function update_param_hexbins(index) {
+        let hex_bin_r = 10, hex_bin_d = 9.5;
+
+
+        let hexbin = d3.hexbin()
+            .size([400, 400])
+            .radius(hex_bin_r);
+
+        $('#param_hexagon').empty();
+
+        d3.select('#param_hexagon').selectAll("path")
+            .data(hexbin(param_points))
+            .enter().append("path")
+            .attr("id", function (d, i) {
+                return "hexbin_" + i;
+            })
+            .attr("d", hexbin.hexagon(hex_bin_d))
+            .classed('hexbin', true)
+            .attr("transform", function (d) {
+                return "translate(" + d.x + "," + d.y + ")";
+            })
+            .style("fill", function (d) {
+                if (index == 'density') {
+                    return color_hex(d.length);
+                } else {
+                    let class_count = new d3.map();
+                    for (let i = 0; i < d.length; i++) {
+                        let key = d[i][2];
+                        let value = class_count.get(key);
+                        if (value == undefined || value == 0) {
+                            class_count.set(key, 1);
+                        } else {
+                            class_count.set(key, value + 1);
+                        }
+                    }
+                    let max_value = 0;
+                    let classification;
+                    class_count.forEach(function (key, value) {
+                        max_value = Math.max(max_value, value);
+                        if (max_value == value) {
+                            classification = key;
+                        }
+                    })
+                    let type = {'val': classification};
+                    return color_radius(param_cValue(type));
+                }
+            });
+    }
+
+
+    /**
+     * 过滤参数点
+     */
+    function filter_parameters() {
+        let check_items = $('.param_checkbox:checked');
+        if (check_items == undefined) {
+            return;
+        }
+        for (let i = 0; i < check_items.length; i++) {
+            let type = check_items[i].value;
+            let expression = '[id^=' + 'param_dot_' + type + '_]';
+            $(expression).each(function () {
+                $(this).attr('user-flag', 1);
+            }).css('opacity', 1);
+        }
+        $('.param_dot').filter(function () {
+            let flag = $(this).attr('user-flag');
+            return flag == undefined || flag != 1;
+        }).css('opacity', 0);
+
+        param_points.splice(0, param_points.length);
+        for (let i = 0; i < check_items.length; i++) {
+            let type = check_items[i].value;
+            let expression = '[id^=' + 'param_dot_' + type + '_]';
+            $(expression).each(function () {
+                $(this).removeAttr('user-flag');
+            });
+            param_source_points.get(type).forEach(function (d) {
+                param_points.push(d);
+            });
+        }
+        let index = $('#param_index_select option:selected').val();
+        update_param_hexbins(index);
+    }
+
+    /**
+     * function to change the background of hexbins in parameter space
+     */
+    function param_bg_change() {
+        $('#reset_parameter_2').trigger('click');
+        let index = $('#param_index_select option:selected').val();
+        update_param_hexbins(index);
+    }
+
+    /**
+     * reset parameter points in parameter space
+     */
+    function reset_parameter_points() {
+        console.log('reset begin---------------------------');
+        console.log(old_attributes);
+        old_attributes.forEach(function (point) {
+            let id = '#' + point['id'];
+            let r = point['r'];
+            let style = point['style'];
+            $(id).attr('r', r);
+            $(id).attr('style', style);
+        })
+        console.log('reset end-----------------------------');
     }
 </script>

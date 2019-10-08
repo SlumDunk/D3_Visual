@@ -62,10 +62,10 @@
         chart
             .name(label)
             .colorNodes(function (name, node) {
-                return color(node, 1) || colors.fallback;
+                return color_sankey(node, 1) || colors.fallback;
             })
             .colorLinks(function (link) {
-                return color(link.source, 4) || color(link.target, 1) || colors.fallback;
+                return color_sankey(link.source, 4) || color_sankey(link.target, 1) || colors.fallback;
             })
             .nodeWidth(15)
             .nodePadding(10)
@@ -77,7 +77,7 @@
             return node.name.replace(/\s*\(.*?\)$/, '');
         }
 
-        function color(node, depth) {
+        function color_sankey(node, depth) {
             let id = node.id.replace(/(_score)?(_\d+)?$/, '');
             if (colors[id]) {
                 return colors[id];
